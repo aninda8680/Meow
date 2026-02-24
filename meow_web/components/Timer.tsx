@@ -11,6 +11,7 @@ interface TimerProps {
     onModeChange: (mode: TimerMode) => void;
     onStateChange?: (state: TimerState) => void;
     onComplete?: () => void;
+    onSessionEnd?: (seconds: number) => void;
 }
 
 // Larger Minimal SVG Icons
@@ -38,7 +39,8 @@ export default function Timer({
     mode,
     onModeChange,
     onStateChange,
-    onComplete
+    onComplete,
+    onSessionEnd
 }: TimerProps) {
     const [time, setTime] = useState<number>(0);
     const [isMounted, setIsMounted] = useState(false);
@@ -46,21 +48,45 @@ export default function Timer({
     const [duration, setDuration] = useState<number>(1500); // Default 25m
     const [customMinutes, setCustomMinutes] = useState<string>("25");
     const intervalRef = useRef<NodeJS.Timeout | null>(null);
+    const sessionStartTimeRef = useRef<number | null>(null);
 
     useEffect(() => {
         setIsMounted(true);
+        // Load local timer state from localStorage
+        const savedTime = localStorage.getItem("meow-time");
+        const savedDuration = localStorage.getItem("meow-duration");
+        const savedState = localStorage.getItem("meow-timer-state") as TimerState;
+
+        if (savedTime) setTime(parseInt(savedTime));
+        if (savedDuration) setDuration(parseInt(savedDuration));
+
+        // Resume running timer if detected
+        if (savedState === "running") {
+            setTimeout(() => start(), 100);
+        } else if (savedState) {
+            setTimerState(savedState);
+            // DO NOT call onStateChange here to avoid updating Home while it's mounting
+        }
     }, []);
 
-    // Sync time when mode changes
+    // Persist state changes
     useEffect(() => {
-        if (timerState === "idle") {
+        if (!isMounted) return;
+        localStorage.setItem("meow-time", time.toString());
+        localStorage.setItem("meow-duration", duration.toString());
+        localStorage.setItem("meow-timer-state", timerState);
+    }, [time, duration, timerState, isMounted]);
+
+    // Sync time when mode changes ONLY if idle
+    useEffect(() => {
+        if (timerState === "idle" && isMounted) {
             if (mode === "countup") {
                 setTime(0);
             } else {
                 setTime(duration);
             }
         }
-    }, [mode, duration, timerState]);
+    }, [mode, duration, timerState, isMounted]);
 
     // Clear interval on unmount
     useEffect(() => {
@@ -83,26 +109,41 @@ export default function Timer({
 
         setTimerState("running");
         onStateChange?.("running");
+        sessionStartTimeRef.current = Date.now();
 
         intervalRef.current = setInterval(() => {
+            let shouldStop = false;
+
             setTime((prev) => {
                 if (mode === "countup") {
                     return prev + 1;
                 } else {
                     if (prev <= 1) {
-                        // Timer finished
-                        if (intervalRef.current) {
-                            clearInterval(intervalRef.current);
-                            intervalRef.current = null;
-                        }
-                        setTimerState("idle");
-                        onStateChange?.("idle");
-                        onComplete?.();
+                        shouldStop = true;
                         return 0;
                     }
                     return prev - 1;
                 }
             });
+
+            // Perform side effects outside of setTime updater
+            if (shouldStop) {
+                if (intervalRef.current) {
+                    clearInterval(intervalRef.current);
+                    intervalRef.current = null;
+                }
+
+                setTimerState("idle");
+                onStateChange?.("idle");
+
+                if (sessionStartTimeRef.current) {
+                    const elapsed = Math.round((Date.now() - sessionStartTimeRef.current) / 1000);
+                    onSessionEnd?.(elapsed);
+                    sessionStartTimeRef.current = null;
+                }
+
+                onComplete?.();
+            }
         }, 1000);
     };
 
@@ -113,9 +154,21 @@ export default function Timer({
         }
         setTimerState("paused");
         onStateChange?.("paused");
+
+        if (sessionStartTimeRef.current) {
+            const elapsed = Math.round((Date.now() - sessionStartTimeRef.current) / 1000);
+            if (elapsed > 0) onSessionEnd?.(elapsed);
+            sessionStartTimeRef.current = null;
+        }
     };
 
     const restart = () => {
+        if (sessionStartTimeRef.current) {
+            const elapsed = Math.round((Date.now() - sessionStartTimeRef.current) / 1000);
+            if (elapsed > 0) onSessionEnd?.(elapsed);
+            sessionStartTimeRef.current = null;
+        }
+
         pause();
         if (mode === "countup") {
             setTime(0);

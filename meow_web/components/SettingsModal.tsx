@@ -15,14 +15,27 @@ export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
     const [mounted, setMounted] = React.useState(false);
     const [username, setUsername] = React.useState("");
     const [selectedAvatar, setSelectedAvatar] = React.useState("users-1.svg");
+    const [widgets, setWidgets] = React.useState({
+        tasks: true,
+        activity: true,
+    });
 
     // Load from localStorage
     React.useEffect(() => {
         setMounted(true);
         const storedName = localStorage.getItem("meow-username");
         const storedAvatar = localStorage.getItem("meow-avatar");
+        const storedWidgets = localStorage.getItem("meow-widgets");
+
         if (storedName) setUsername(storedName);
         if (storedAvatar) setSelectedAvatar(storedAvatar);
+        if (storedWidgets) {
+            try {
+                setWidgets(JSON.parse(storedWidgets));
+            } catch (e) {
+                console.error("Failed to parse widgets", e);
+            }
+        }
     }, []);
 
     // Save to localStorage
@@ -36,6 +49,13 @@ export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
     const handleAvatarSelect = (avatar: string) => {
         setSelectedAvatar(avatar);
         localStorage.setItem("meow-avatar", avatar);
+        window.dispatchEvent(new Event('user-settings-changed'));
+    };
+
+    const toggleWidget = (key: keyof typeof widgets) => {
+        const newWidgets = { ...widgets, [key]: !widgets[key] };
+        setWidgets(newWidgets);
+        localStorage.setItem("meow-widgets", JSON.stringify(newWidgets));
         window.dispatchEvent(new Event('user-settings-changed'));
     };
 
@@ -97,8 +117,8 @@ export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
                                                     key={avatar}
                                                     onClick={() => handleAvatarSelect(avatar)}
                                                     className={`relative aspect-square rounded-xl overflow-hidden transition-all hover:scale-110 active:scale-95 ${selectedAvatar === avatar
-                                                            ? 'ring-2 ring-foreground shadow-xl scale-110 z-10'
-                                                            : 'opacity-40 hover:opacity-100'
+                                                        ? 'ring-2 ring-foreground shadow-xl scale-110 z-10'
+                                                        : 'opacity-40 hover:opacity-100'
                                                         }`}
                                                 >
                                                     <img
@@ -132,6 +152,28 @@ export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
                                         >
                                             <item.icon className="w-5 h-5" />
                                             <span className="text-[10px] font-bold uppercase tracking-widest">{item.label}</span>
+                                        </button>
+                                    ))}
+                                </div>
+                            </section>
+
+                            {/* Widgets Toggle */}
+                            <section>
+                                <h3 className="text-[10px] uppercase tracking-[0.25em] font-extrabold opacity-40 mb-6 px-1">Widgets</h3>
+                                <div className="space-y-2">
+                                    {[
+                                        { id: 'activity', label: 'Activity Tracker' },
+                                        { id: 'tasks', label: 'Task List' },
+                                    ].map((item) => (
+                                        <button
+                                            key={item.id}
+                                            onClick={() => toggleWidget(item.id as keyof typeof widgets)}
+                                            className="w-full flex justify-between items-center p-4 rounded-2xl bg-foreground/5 hover:bg-foreground/[0.08] transition-all group"
+                                        >
+                                            <span className="text-sm font-semibold opacity-70 group-hover:opacity-100">{item.label}</span>
+                                            <div className={`w-10 h-5 rounded-full relative transition-all duration-300 ${widgets[item.id as keyof typeof widgets] ? 'bg-foreground' : 'bg-foreground/10'}`}>
+                                                <div className={`absolute top-1 w-3 h-3 rounded-full bg-background transition-all duration-300 ${widgets[item.id as keyof typeof widgets] ? 'left-6' : 'left-1'}`} />
+                                            </div>
                                         </button>
                                     ))}
                                 </div>

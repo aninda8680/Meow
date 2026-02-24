@@ -141,3 +141,290 @@ PREMIUM
  ├── Activity Tracker
  ├── Analytics
  ├── Sync
+
+
+<!-- Pomodoro / Countdown Mode -->
+
+ <!-- WHAT:
+Add countdown-based focus sessions (not just count-up).
+
+WHY:
+Users need structured focus (25min, 45min etc).
+
+HOW:
+- Add new state: mode = "countup" | "countdown"
+- Add duration state (in minutes)
+- Convert duration → seconds
+- Decrease time every second
+- When time === 0 → trigger session complete
+
+UI:
+- Buttons: [25m] [45m] [60m] [Custom]
+- Toggle: Count Up / Count Down
+
+LOGIC:
+if (mode === "countdown") {
+  timeLeft = duration - elapsed
+}
+
+OUTPUT:
+- Timer counts down
+- Ends with event trigger -->
+
+
+
+
+
+
+<!-- 📝 Task System (Linked to Timer) -->
+<!-- 
+WHAT:
+Allow users to create tasks and link them to sessions.
+
+WHY:
+Focus without purpose = useless
+
+HOW:
+State:
+tasks = [
+  { id, title, completed, linkedSessionTime }
+]
+
+Features:
+- Add task
+- Delete task
+- Mark complete
+- Select active task
+
+LOGIC:
+When timer starts:
+→ attach session to selected task
+
+When session ends:
+→ update task.focusTime += sessionDuration
+
+UI:
+- Input field
+- Task list
+- Highlight active task
+
+OUTPUT:
+- Tasks linked with focus sessions -->
+
+
+
+
+
+
+
+<!-- 💾 Local Storage Persistence -->
+
+<!-- WHAT:
+Save user data locally so refresh doesn’t reset everything.
+
+WHY:
+Current app loses all progress ❌
+
+HOW:
+Use localStorage:
+
+Save:
+- timerState
+- time
+- tasks
+- theme
+- mode
+
+LOGIC:
+On load:
+→ read localStorage
+→ hydrate state
+
+On change:
+→ save to localStorage
+
+Example:
+localStorage.setItem("meow-timer", JSON.stringify(state))
+
+OUTPUT:
+- Data persists after refresh -->
+
+
+
+
+
+<!-- 🔔 Session Completion System -->
+
+
+<!-- WHAT:
+Trigger feedback when session ends.
+
+WHY:
+Closure = satisfaction + habit loop
+
+HOW:
+When timer hits 0:
+- show message
+- play sound (optional)
+- reset or go to break
+
+UI:
+- Toast / popup:
+  "Nice. You focused for 25 mins 🎯"
+
+Optional:
+- vibration (mobile)
+- subtle animation
+
+OUTPUT:
+- User gets feedback at end of session -->
+
+
+
+
+
+<!-- 👀 Reactive Eye Intelligence -->
+
+WHAT:
+Make eyes react to USER behavior (not just timer).
+
+WHY:
+This is your MAIN USP
+
+HOW:
+
+Detect:
+1. Tab switch:
+   document.visibilitychange
+
+2. Idle:
+   track mouse/keyboard inactivity
+
+LOGIC:
+
+if (tabHidden) → mood = "annoyed"
+if (idle > 60s) → mood = "sleeping"
+if (focused) → mood = "serious"
+
+STATE:
+userActivityState = "active" | "idle" | "away"
+
+OUTPUT:
+- Eyes react dynamically to real behavior
+
+
+
+
+
+
+<!-- 📊 Focus Score System -->
+
+
+WHAT:
+Calculate a score for each session.
+
+WHY:
+Gamification = retention
+
+HOW:
+
+Variables:
+- sessionCompleted
+- distractionCount
+- idleTime
+
+FORMULA:
+score = 
+ + 100 (complete session)
+ - (distractions * 10)
+ - (idleTime / 5)
+
+STATE:
+focusScore (per session)
+totalScore (daily)
+
+UI:
+- show score after session
+- show daily score
+
+OUTPUT:
+- User sees measurable performance
+
+
+
+
+
+
+<!-- 🔥 Streak System -->
+
+
+WHAT:
+Track daily consistency.
+
+WHY:
+Streak = addiction loop
+
+HOW:
+
+STATE:
+streakCount
+lastActiveDate
+
+LOGIC:
+
+if (today - lastActiveDate === 1 day)
+  streak++
+else if (>1 day)
+  streak = 1
+
+Store in localStorage
+
+UI:
+- "🔥 5 Day Streak"
+
+OUTPUT:
+- Users return daily to maintain streak
+
+
+
+
+
+
+<!-- 🧠 Basic Session Insights -->
+
+
+WHAT:
+Show simple productivity stats.
+
+WHY:
+Users want awareness of progress
+
+HOW:
+
+Track:
+- totalFocusTime (per day)
+- sessionsCompleted
+- avgSessionTime
+
+STATE:
+stats = {
+  todayTime,
+  sessions,
+  average
+}
+
+UI:
+- small dashboard:
+  "Today: 2h 30m"
+  "Sessions: 5"
+
+OUTPUT:
+- Basic analytics visible to user
+
+
+
+
+
+
+
+

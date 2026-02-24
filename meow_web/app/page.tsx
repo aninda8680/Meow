@@ -1,10 +1,13 @@
 "use client";
 
 import { useState, useCallback, useEffect } from "react";
-import { motion } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
 import CatEyes from "@/components/Eyes";
 import Timer from "@/components/Timer";
 import { SettingsButton } from "@/components/SettingsButton";
+import TaskSection from "@/components/widgets/TaskSection";
+import ActivityTracker from "@/components/widgets/ActivityTracker";
+import CompletionToast from "@/components/CompletionToast";
 // import WalkingCat from "@/components/WalkingCat";
 
 type TimerState = "idle" | "running" | "paused";
@@ -15,12 +18,34 @@ export default function Home() {
   const [mode, setMode] = useState<TimerMode>("countup");
   const [catXFraction, setCatXFraction] = useState<number | null>(null);
   const [userInfo, setUserInfo] = useState({ name: "", avatar: "users-1.svg" });
+  const [activeTaskId, setActiveTaskId] = useState<string | null>(null);
+  const [showCompletion, setShowCompletion] = useState(false);
+  const [lastSessionTime, setLastSessionTime] = useState(0);
+  const [widgets, setWidgets] = useState({
+    tasks: true,
+    activity: true,
+  });
 
   // Load user settings
   const loadUserSettings = useCallback(() => {
     const name = localStorage.getItem("meow-username") || "";
     const avatar = localStorage.getItem("meow-avatar") || "users-1.svg";
+    const savedMode = localStorage.getItem("meow-mode") as TimerMode;
+    const savedActiveTask = localStorage.getItem("meow-active-task");
+    const savedState = localStorage.getItem("meow-timer-state") as TimerState;
+    const storedWidgets = localStorage.getItem("meow-widgets");
+
     setUserInfo({ name, avatar });
+    if (savedMode) setMode(savedMode);
+    if (savedActiveTask) setActiveTaskId(savedActiveTask);
+    if (savedState) setTimerState(savedState);
+    if (storedWidgets) {
+      try {
+        setWidgets(JSON.parse(storedWidgets));
+      } catch (e) {
+        console.error("Failed to parse widgets", e);
+      }
+    }
   }, []);
 
   useEffect(() => {
@@ -28,6 +53,19 @@ export default function Home() {
     window.addEventListener('user-settings-changed', loadUserSettings);
     return () => window.removeEventListener('user-settings-changed', loadUserSettings);
   }, [loadUserSettings]);
+
+  // Persist mode and active task
+  useEffect(() => {
+    if (mode) localStorage.setItem("meow-mode", mode);
+  }, [mode]);
+
+  useEffect(() => {
+    if (activeTaskId) {
+      localStorage.setItem("meow-active-task", activeTaskId);
+    } else {
+      localStorage.removeItem("meow-active-task");
+    }
+  }, [activeTaskId]);
 
   const getMoodFromState = (state: TimerState) => {
     switch (state) {
@@ -42,9 +80,17 @@ export default function Home() {
   }, []);
 
   const handleTimerComplete = useCallback(() => {
-    // Session complete logic
-    alert("Focus session complete! Take a break. 🐱");
+    setShowCompletion(true);
   }, []);
+
+  const handleSessionEnd = useCallback((duration: number) => {
+    setLastSessionTime(duration);
+    if (activeTaskId) {
+      window.dispatchEvent(new CustomEvent("meow-focus-update", {
+        detail: { taskId: activeTaskId, duration }
+      }));
+    }
+  }, [activeTaskId]);
 
   return (
     <div className="relative min-h-screen flex items-center justify-center bg-background text-foreground overflow-hidden transition-colors duration-500">
@@ -84,7 +130,7 @@ export default function Home() {
       </div>
 
       <main className="relative z-10 flex flex-col items-center justify-center -translate-y-8 w-full max-w-4xl px-6">
-        <div className="flex flex-col items-center gap-16 w-full">
+        <div className="flex flex-col items-center gap-12 lg:gap-16 w-full">
           <div className="flex flex-col items-center gap-6">
             <div className="transition-all duration-700 hover:scale-105 active:scale-95 cursor-pointer">
               <CatEyes
@@ -99,9 +145,32 @@ export default function Home() {
             onModeChange={setMode}
             onStateChange={setTimerState}
             onComplete={handleTimerComplete}
+            onSessionEnd={handleSessionEnd}
           />
         </div>
       </main>
+
+      <AnimatePresence>
+        {widgets.tasks && (
+          <TaskSection
+            activeTaskId={activeTaskId}
+            onSetActiveTask={setActiveTaskId}
+          />
+        )}
+      </AnimatePresence>
+
+      <AnimatePresence>
+        {widgets.activity && (
+          <ActivityTracker />
+        )}
+      </AnimatePresence>
+
+      <CompletionToast
+        show={showCompletion}
+        onClose={() => setShowCompletion(false)}
+        message="Session Complete"
+        subMessage={`Nice. You focused for ${Math.floor(lastSessionTime / 60)}m ${lastSessionTime % 60}s 🎯`}
+      />
 
       <footer className="fixed bottom-8 left-1/2 -translate-x-1/2 z-50">
         <div className="flex flex-col items-center gap-4">
