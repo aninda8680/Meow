@@ -18,6 +18,8 @@ export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
     const [widgets, setWidgets] = React.useState({
         tasks: true,
         activity: true,
+        rain: true,
+        tabHistory: true,
     });
 
     // Load from localStorage
@@ -31,7 +33,8 @@ export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
         if (storedAvatar) setSelectedAvatar(storedAvatar);
         if (storedWidgets) {
             try {
-                setWidgets(JSON.parse(storedWidgets));
+                const parsed = JSON.parse(storedWidgets);
+                setWidgets(prev => ({ ...prev, ...parsed }));
             } catch (e) {
                 console.error("Failed to parse widgets", e);
             }
@@ -164,6 +167,8 @@ export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
                                     {[
                                         { id: 'activity', label: 'Activity Tracker' },
                                         { id: 'tasks', label: 'Task List' },
+                                        { id: 'tabHistory', label: 'Tab Switch History' },
+                                        { id: 'rain', label: 'Rainy Theme' },
                                     ].map((item) => (
                                         <button
                                             key={item.id}

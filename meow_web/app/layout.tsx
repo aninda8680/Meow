@@ -14,10 +14,11 @@ const geistMono = Geist_Mono({
 
 export const metadata: Metadata = {
   title: "Meow - Let's Focus!",
-  description: "Let's focus on our goals!", 
+  description: "Let's focus on our goals!",
 };
 
 import { ThemeProvider } from "@/components/theme-provider";
+import SmoothScroll from "@/components/SmoothScroll";
 
 export default function RootLayout({
   children,
@@ -35,7 +36,9 @@ export default function RootLayout({
           enableSystem
           disableTransitionOnChange
         >
-          {children}
+          <SmoothScroll>
+            {children}
+          </SmoothScroll>
         </ThemeProvider>
       </body>
     </html>
