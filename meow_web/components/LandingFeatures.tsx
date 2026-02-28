@@ -33,24 +33,12 @@ const demoItems = [
 export default function LandingFeatures() {
     return (
         <section className="py-32 px-6 relative overflow-hidden bg-background">
-            {/* Decorative Label */}
-            <div className="absolute top-0 left-1/2 -translate-x-1/2 opacity-[0.02] text-[15vw] font-black pointer-events-none select-none uppercase">
-                Features
-            </div>
-
             <div className="max-w-7xl mx-auto">
-                <div className="flex flex-col md:flex-row items-end justify-between mb-16 gap-8">
-                    <div className="max-w-xl">
-                        <h2
-                            className="text-5xl md:text-7xl font-bold mb-8 leading-tight tracking-tighter"
-                            style={{ fontFamily: "var(--font-pixel)" }}
-                        >
-                            CORE <br /> <span className="opacity-40">FEATURES</span>
-                        </h2>
-                        <p className="text-xl opacity-60 leading-relaxed">
-                            Everything you need to stay focused, with a little cat-shaped motivation on the side.
-                        </p>
-                    </div>
+                {/* Massive Heading restored to 20vw and original font */}
+                <div className="flex justify-center mb-40 select-none">
+                    <h2 className="opacity-[0.15] text-[18vw] font-black pointer-events-none uppercase leading-none tracking-tighter whitespace-nowrap text-transparent bg-clip-text bg-gradient-to-br from-foreground to-foreground/20">
+                        Features
+                    </h2>
                 </div>
 
                 <div className="h-[600px] relative border border-foreground/10 rounded-3xl overflow-hidden shadow-2xl">

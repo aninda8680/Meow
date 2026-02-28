@@ -30,7 +30,7 @@ export default function LandingPage() {
             </main>
 
             {/* Footer */}
-            <LandingFooter />
+            {/* <LandingFooter /> */}
         </div>
     );
 }

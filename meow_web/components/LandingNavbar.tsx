@@ -36,7 +36,7 @@ export default function LandingNavbar() {
                 <div className="flex items-center gap-4">
                     <Link href="/main">
                         <button className="px-8 py-3 bg-foreground text-background rounded-xl font-bold text-xs uppercase tracking-widest hover:scale-[1.05] active:scale-95 transition-all shadow-lg hover:shadow-2xl">
-                            Launch App
+                            Try It
                         </button>
                     </Link>
                 </div>

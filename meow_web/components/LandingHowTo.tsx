@@ -32,68 +32,60 @@ const steps = [
 
 export default function LandingHowTo() {
     return (
-        <section className="py-32 px-6 bg-foreground/[0.01] border-y border-foreground/[0.03] relative">
+        <section className="py-32 px-6 bg-foreground/[0.01] border-y border-foreground/[0.03] relative overflow-hidden">
             <div className="max-w-7xl mx-auto">
-                <div className="grid lg:grid-cols-3 gap-16 mb-32">
-                    <div className="lg:col-span-1">
-                        <div className="sticky top-32">
-                            <span className="text-xs font-bold tracking-[0.4em] opacity-40 uppercase mb-4 block">Deployment Guide</span>
-                            <h2
-                                className="text-5xl font-bold mb-8 tracking-tighter"
-                                style={{ fontFamily: "var(--font-pixel)" }}
-                            >
-                                HOW TO <br /> <span className="opacity-40">INTEGRATE</span>
-                            </h2>
-                            <div className="flex flex-col gap-4">
-                                <div className="flex items-center gap-3 text-sm opacity-60">
-                                    <Terminal size={16} />
-                                    <span>Cross-platform compatibility</span>
+                {/* Massive Centered Heading */}
+                <div className="flex justify-center mb-40 select-none">
+                    <h2 className="opacity-[0.15] text-[16vw] font-black pointer-events-none uppercase leading-none tracking-tighter whitespace-nowrap text-transparent bg-clip-text bg-gradient-to-br from-foreground to-foreground/20">
+                        Integrate
+                    </h2>
+                </div>
+
+                <div className="max-w-4xl mx-auto flex flex-col gap-12 mb-32">
+                    {steps.map((step, i) => (
+                        <motion.div
+                            key={i}
+                            initial={{ opacity: 0, y: 20 }}
+                            whileInView={{ opacity: 1, y: 0 }}
+                            transition={{ delay: i * 0.1 }}
+                            viewport={{ once: true }}
+                            className="group relative flex flex-col md:flex-row gap-8 p-10 bg-background border border-foreground/[0.05] rounded-[32px] hover:border-foreground/20 transition-all shadow-sm"
+                        >
+                            <div className="flex-shrink-0 flex items-center md:flex-col gap-4">
+                                <div className="w-16 h-16 rounded-2xl bg-foreground/[0.03] flex items-center justify-center text-foreground group-hover:bg-foreground group-hover:text-background transition-colors duration-500">
+                                    {step.icon}
                                 </div>
-                                <div className="flex items-center gap-3 text-sm opacity-60">
-                                    <Code2 size={16} />
-                                    <span>Open source architecture</span>
-                                </div>
+                                <span className="text-xl font-bold opacity-10">{step.id}</span>
                             </div>
-                        </div>
-                    </div>
 
-                    <div className="lg:col-span-2 flex flex-col gap-12">
-                        {steps.map((step, i) => (
-                            <motion.div
-                                key={i}
-                                initial={{ opacity: 0, x: 20 }}
-                                whileInView={{ opacity: 1, x: 0 }}
-                                transition={{ delay: i * 0.1 }}
-                                viewport={{ once: true }}
-                                className="group relative flex gap-8 p-10 bg-background border border-foreground/[0.05] rounded-[32px] hover:border-foreground/20 transition-all shadow-sm"
-                            >
-                                <div className="flex-shrink-0 flex flex-col items-center gap-4">
-                                    <div className="w-16 h-16 rounded-2xl bg-foreground/[0.03] flex items-center justify-center text-foreground group-hover:bg-foreground group-hover:text-background transition-colors duration-500">
-                                        {step.icon}
-                                    </div>
-                                    <span className="text-xl font-bold opacity-10">{step.id}</span>
-                                </div>
-
-                                <div className="flex-grow">
-                                    <div className="flex items-center gap-3 mb-2">
-                                        <h3 className="text-2xl font-bold tracking-tight">{step.title}</h3>
-                                        {step.tag && (
-                                            <span className="px-2 py-0.5 bg-foreground/5 text-[9px] font-bold rounded-md opacity-50 uppercase tracking-widest">{step.tag}</span>
-                                        )}
-                                    </div>
-                                    <div className="text-[10px] font-bold tracking-widest opacity-30 mb-4">{step.subtitle}</div>
-                                    <p className="opacity-50 leading-relaxed mb-6 group-hover:opacity-70 transition-opacity">
-                                        {step.description}
-                                    </p>
-                                    {step.link && (
-                                        <button className="text-xs font-bold underline underline-offset-8 decoration-foreground/20 hover:decoration-foreground transition-all">
-                                            {step.link}
-                                        </button>
+                            <div className="flex-grow text-center md:text-left">
+                                <div className="flex flex-col md:flex-row items-center md:items-center gap-3 mb-2">
+                                    <h3 className="text-2xl font-bold tracking-tight">{step.title}</h3>
+                                    {step.tag && (
+                                        <span className="px-2 py-0.5 bg-foreground/5 text-[9px] font-bold rounded-md opacity-50 uppercase tracking-widest">{step.tag}</span>
                                     )}
                                 </div>
-                            </motion.div>
-                        ))}
-                    </div>
+                                <div className="text-[10px] font-bold tracking-widest opacity-30 mb-4">{step.subtitle}</div>
+                                <p className="opacity-50 leading-relaxed mb-6 group-hover:opacity-70 transition-opacity max-w-2xl mx-auto md:mx-0">
+                                    {step.description}
+                                </p>
+                                {step.link && (
+                                    <button className="text-xs font-bold underline underline-offset-8 decoration-foreground/20 hover:decoration-foreground transition-all">
+                                        {step.link}
+                                    </button>
+                                )}
+                            </div>
+
+                            {/* Coming Soon Overlay for Staging */}
+                            {step.tag === "STAGING" && (
+                                <div className="absolute inset-0 bg-white/90 backdrop-blur-md flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-300 rounded-[32px] z-20 pointer-events-none">
+                                    <span className="text-2xl font-bold tracking-tighter uppercase text-black" style={{ fontFamily: 'var(--font-pixel)' }}>
+                                        Soon !
+                                    </span>
+                                </div>
+                            )}
+                        </motion.div>
+                    ))}
                 </div>
 
                 {/* Support Banner */}

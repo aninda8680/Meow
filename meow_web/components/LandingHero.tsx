@@ -37,7 +37,7 @@ export default function LandingHero() {
     }, [mouseXSpring, mouseYSpring]);
 
     return (
-        <section ref={containerRef} className="relative min-h-[120vh] flex items-center justify-center overflow-hidden bg-background">
+        <section ref={containerRef} className="relative min-h-[120vh] flex items-center px-6 overflow-hidden bg-background">
             {/* 
                 INSPIRED BY VENGENCE: INTERACTIVE PERSPECTIVE GRID
                 A deep 3D space that reacts to mouse movement
@@ -89,7 +89,7 @@ export default function LandingHero() {
                 />
             </div>
 
-            <div className="container mx-auto px-6 z-10 grid lg:grid-cols-2 gap-20 items-center">
+            <div className="max-w-7xl mx-auto z-10 grid lg:grid-cols-2 gap-20 items-center w-full">
                 {/* Left Side: Content with Glitch Text */}
                 <motion.div
                     initial={{ opacity: 0, x: -50 }}
@@ -215,7 +215,7 @@ export default function LandingHero() {
                 style={{ x: ghostX, opacity }}
                 className="absolute bottom-10 left-0 text-[25vw] font-black opacity-[0.015] pointer-events-none whitespace-nowrap select-none leading-none tracking-tighter uppercase"
             >
-                Neural Core
+                Meoww
             </motion.div>
         </section>
     );
