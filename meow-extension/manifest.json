@@ -1,0 +1,35 @@
+{
+  "name": "Meow Tab Tracker",
+  "description": "Track tab usage for Meow Focus",
+  "version": "1.0.0",
+  "manifest_version": 3,
+
+  "permissions": [
+    "tabs",
+    "storage",
+    "activeTab"
+  ],
+
+  "host_permissions": [
+    "<all_urls>"
+  ],
+
+  "background": {
+    "service_worker": "background.js",
+    "type": "module"
+  },
+
+  "content_scripts": [
+    {
+      "matches": [
+      "https://hi-meow.vercel.app/*",
+      "http://localhost:3000/*"
+    ],
+      "js": ["content.js"]
+    }
+  ],
+
+  "icons": {
+    "128": "icons/icon128.png"
+  }
+}
