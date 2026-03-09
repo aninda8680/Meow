@@ -73,6 +73,10 @@ function logTab(domain, title, duration, id) {
     saveDB(db);
 }
 
+function getStats() {
+    return db;
+}
+
 function clearDB() {
     db = { sessions: [], tabs: [], totals: {} };
     saveDB(db);

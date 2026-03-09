@@ -4,6 +4,7 @@ import * as React from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { X, Sun, Moon, Monitor } from "lucide-react";
 import { useTheme } from "next-themes";
+import { useSystemTracker } from "@/hooks/useSystemTracker";
 
 interface SettingsModalProps {
     isOpen: boolean;
@@ -12,6 +13,7 @@ interface SettingsModalProps {
 
 export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
     const { theme, setTheme } = useTheme();
+    const { clearData } = useSystemTracker();
     const [mounted, setMounted] = React.useState(false);
     const [username, setUsername] = React.useState("");
     const [selectedAvatar, setSelectedAvatar] = React.useState("users-1.svg");
@@ -181,6 +183,47 @@ export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
                                             </div>
                                         </button>
                                     ))}
+                                </div>
+                            </section>
+
+                            {/* Privacy & Data Section */}
+                            <section>
+                                <h3 className="text-[10px] uppercase tracking-[0.25em] font-extrabold opacity-40 mb-6 px-1 text-red-500/80">Privacy & Data</h3>
+                                <div className="space-y-3">
+                                    <div className="p-5 rounded-3xl bg-red-500/[0.03] border border-red-500/10 space-y-4">
+                                        <div className="space-y-1">
+                                            <h4 className="text-sm font-bold opacity-80">Local Activity History</h4>
+                                            <p className="text-[10px] opacity-40 leading-relaxed font-medium">This will permanently delete all app and tab switching logs from your local .meow-activity-log.json file.</p>
+                                        </div>
+                                        <button
+                                            onClick={() => {
+                                                if (confirm("Delete all activity history? This cannot be undone.")) {
+                                                    clearData();
+                                                }
+                                            }}
+                                            className="w-full py-3 rounded-2xl bg-red-500/10 hover:bg-red-500 text-red-500 hover:text-white text-[10px] font-black uppercase tracking-widest transition-all active:scale-[0.98]"
+                                        >
+                                            Delete History
+                                        </button>
+                                    </div>
+
+                                    <div className="p-5 rounded-3xl bg-foreground/[0.03] border border-foreground/5 space-y-4">
+                                        <div className="space-y-1">
+                                            <h4 className="text-sm font-bold opacity-80">App Preferences</h4>
+                                            <p className="text-[10px] opacity-40 leading-relaxed font-medium">Resets your username, avatar selection, and widget preferences. Your history remains safe.</p>
+                                        </div>
+                                        <button
+                                            onClick={() => {
+                                                if (confirm("Reset all app preferences? Your activity history will be kept.")) {
+                                                    localStorage.clear();
+                                                    window.location.reload();
+                                                }
+                                            }}
+                                            className="w-full py-3 rounded-2xl bg-foreground/5 hover:bg-foreground/10 text-xs font-bold transition-all active:scale-[0.98]"
+                                        >
+                                            Reset Preferences
+                                        </button>
+                                    </div>
                                 </div>
                             </section>
 
