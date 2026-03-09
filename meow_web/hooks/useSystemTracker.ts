@@ -23,40 +23,50 @@ export function useSystemTracker() {
     const [ws, setWs] = useState<WebSocket | null>(null);
 
     useEffect(() => {
-        // Use 127.0.0.1 instead of localhost for better compatibility on hosted sites
-        const socket = new WebSocket('ws://127.0.0.1:5263');
+        let socket: WebSocket;
+        let reconnectTimeout: NodeJS.Timeout;
 
-        socket.onopen = () => {
-            setStatus('connected');
-            console.log("✅ Connected to Meow System Tracker");
+        const connect = () => {
+            console.log("🔄 Attempting to connect to Meow Tracker...");
+            socket = new WebSocket('ws://127.0.0.1:5263');
+
+            socket.onopen = () => {
+                setStatus('connected');
+                console.log("✅ Connected to Meow System Tracker");
+            };
+
+            socket.onmessage = (event) => {
+                try {
+                    const data = JSON.parse(event.data);
+                    if (data.type === 'init' || data.type === 'stats') {
+                        setStats(data.data);
+                    } else if (data.type === 'update') {
+                        setCurrentApp({ app: data.app, title: data.title });
+                    }
+                } catch (e) {
+                    console.error("❌ Failed to parse tracker message:", e);
+                }
+            };
+
+            socket.onerror = (error) => {
+                console.warn("⚠️ Tracker connection error. Is the backend running?");
+                setStatus('error');
+            };
+
+            socket.onclose = () => {
+                setStatus('connecting');
+                console.log("🔌 Tracker disconnected. Retrying in 5s...");
+                reconnectTimeout = setTimeout(connect, 5000);
+            };
+
+            setWs(socket);
         };
 
-        socket.onmessage = (event) => {
-            const data = JSON.parse(event.data);
-
-            if (data.type === 'init' || data.type === 'stats') {
-                setStats(data.data);
-            } else if (data.type === 'update') {
-                setCurrentApp({ app: data.app, title: data.title });
-            }
-        };
-
-        socket.onerror = () => {
-            setStatus('error');
-        };
-
-        socket.onclose = () => {
-            setStatus('connecting');
-            // Reconnect logic
-            setTimeout(() => {
-                // This will trigger the effect again
-            }, 3000);
-        };
-
-        setWs(socket);
+        connect();
 
         return () => {
-            socket.close();
+            if (socket) socket.close();
+            if (reconnectTimeout) clearTimeout(reconnectTimeout);
         };
     }, []);
 

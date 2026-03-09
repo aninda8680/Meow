@@ -23,39 +23,48 @@ export function useSystemTracker() {
     const [ws, setWs] = useState<WebSocket | null>(null);
 
     useEffect(() => {
-        const socket = new WebSocket('ws://localhost:5263');
+        let socket: WebSocket;
+        let reconnectTimeout: NodeJS.Timeout;
 
-        socket.onopen = () => {
-            setStatus('connected');
-            console.log("✅ Connected to Meow System Tracker");
-        };
+        const connect = () => {
+            console.log("🔄 Attempting to connect to Meow Tracker...");
+            socket = new WebSocket('ws://127.0.0.1:5263');
 
-        socket.onmessage = (event) => {
-            try {
-                const data = JSON.parse(event.data);
+            socket.onopen = () => {
+                setStatus('connected');
+                console.log("✅ Connected to Meow System Tracker");
+            };
 
-                if (data.type === 'init' || data.type === 'stats') {
-                    setStats(data.data);
-                } else if (data.type === 'update') {
-                    setCurrentApp({ app: data.app, title: data.title });
+            socket.onmessage = (event) => {
+                try {
+                    const data = JSON.parse(event.data);
+                    if (data.type === 'init' || data.type === 'stats') {
+                        setStats(data.data);
+                    } else if (data.type === 'update') {
+                        setCurrentApp({ app: data.app, title: data.title });
+                    }
+                } catch (e) {
+                    console.error("Parse error", e);
                 }
-            } catch (e) {
-                console.error("Parse error", e);
-            }
+            };
+
+            socket.onerror = () => {
+                setStatus('error');
+            };
+
+            socket.onclose = () => {
+                setStatus('connecting');
+                reconnectTimeout = setTimeout(connect, 5000);
+            };
+
+            setWs(socket);
         };
 
-        socket.onerror = () => {
-            setStatus('error');
-        };
-
-        socket.onclose = () => {
-            setStatus('connecting');
-        };
-
-        setWs(socket);
+        connect();
 
         return () => {
-            socket.close();
+            if (socket) socket.close();
+            if (reconnectTimeout) clearTimeout(reconnectTimeout);
         };
     }, []);
 

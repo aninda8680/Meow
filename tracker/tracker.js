@@ -8,7 +8,7 @@ const { logSession, logTab, getStats } = require("./database");
 
 const PORT = 5263;
 const app = express();
-app.use(cors()); // Allow your Vercel site to talk to your local machine
+app.use(cors());
 
 // REST endpoint for initial data sync
 app.get("/stats", (req, res) => {
@@ -16,7 +16,17 @@ app.get("/stats", (req, res) => {
 });
 
 const server = app.listen(PORT, '0.0.0.0', () => {
-    console.log(`🟢 Meow Backend running on http://localhost:${PORT}`);
+    console.log(`\n🐾 MEOW BACKEND ACTIVE`);
+    console.log(`🟢 Listening on: http://127.0.0.1:${PORT}`);
+    console.log(`🔗 Connect your Dashboard to this local backend.\n`);
+}).on('error', (err) => {
+    if (err.code === 'EADDRINUSE') {
+        console.log(`\n⚠️  Port ${PORT} is already in use.`);
+        console.log(`💡 Meow is likely already running in the background.\n`);
+        process.exit(0);
+    } else {
+        console.error('❌ Server error:', err);
+    }
 });
 
 const wss = new WebSocket.Server({ server });
