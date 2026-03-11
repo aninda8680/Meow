@@ -7,26 +7,44 @@ const steps = [
     {
         id: "01",
         icon: <Download className="w-6 h-6" />,
-        title: "INITIATE EXTENSION",
-        subtitle: "DATA ACQUISITION LAYER",
-        description: "Install the core bypass extension. This enables real-time browser telemetry and event hooks required for activity mapping.",
-        link: "Chrome Web Store"
+        title: "TAB TELEMETRY",
+        subtitle: "BROWSER EXTENSION",
+        description: "Install the core bypass extension. This enables real-time browser telemetry and event hooks required for active tab mapping.",
+        link: "Download Extension",
+        href: "/downloads/meow-extension.zip",
+        download: "meow-extension.zip",
+        tag: ""
     },
     {
         id: "02",
-        icon: <Globe className="w-6 h-6" />,
-        title: "ACCESS CONSOLE",
-        subtitle: "COMMAND & CONTROL",
-        description: "Initialize the web-based dashboard. This is your primary interface for focus visualization and session management.",
-        link: "Open Dashboard"
+        icon: <Terminal className="w-6 h-6" />,
+        title: "APP TRACKER (CLI)",
+        subtitle: "COMMAND LINE INTERFACE",
+        description: "Run the zero-clone app tracker via Node.js. No installation required—just execute the mission-critical command.",
+        link: "npx meow-tracker",
+        href: "#",
+        tag: ""
     },
     {
         id: "03",
         icon: <Monitor className="w-6 h-6" />,
-        title: "NATIVE UPLINK",
-        subtitle: "DESKTOP INTEGRATION",
-        description: "In development: A dedicated Electron-powered binary for system-wide focus containment and native OS hooks.",
-        tag: "STAGING"
+        title: "SYSTEM TRAP APP",
+        subtitle: "NATIVE DESKTOP SHELL",
+        description: "A dedicated Electron-powered binary for system-wide focus containment and native OS hooks with system tray integration.",
+        link: "Download App",
+        href: "/downloads/meow-app.zip",
+        download: "meow-app.zip",
+        tag: ""
+    },
+    {
+        id: "04",
+        icon: <Globe className="w-6 h-6" />,
+        title: "MISSION CONTROL",
+        subtitle: "WEB CONSOLE",
+        description: "Initialize the web-based dashboard. This is your primary interface for focus visualization and deep session management.",
+        link: "Open Dashboard",
+        href: "/main",
+        tag: ""
     }
 ];
 
@@ -35,10 +53,20 @@ export default function LandingHowTo() {
         <section className="py-32 px-6 bg-foreground/[0.01] border-y border-foreground/[0.03] relative overflow-hidden">
             <div className="max-w-7xl mx-auto">
                 {/* Massive Centered Heading */}
-                <div className="flex justify-center mb-40 select-none">
+                <div className="flex flex-col items-center mb-40 select-none">
                     <h2 className="opacity-[0.15] text-[16vw] font-black pointer-events-none uppercase leading-none tracking-tighter whitespace-nowrap text-transparent bg-clip-text bg-gradient-to-br from-foreground to-foreground/20">
-                        Integrate
+                        Deploy
                     </h2>
+                    <motion.div
+                        initial={{ opacity: 0, y: 10 }}
+                        whileInView={{ opacity: 1, y: 0 }}
+                        className="mt-8 flex items-center gap-3 px-4 py-2 bg-foreground/[0.03] border border-foreground/[0.05] rounded-full"
+                    >
+                        <Code2 size={14} className="text-foreground/40" />
+                        <span className="text-[10px] uppercase tracking-[0.2em] font-bold opacity-40">
+                            Prerequisite: <a href="https://nodejs.org" target="_blank" rel="noopener" className="underline hover:opacity-100 transition-opacity">Node.js Engine</a> (v18+)
+                        </span>
+                    </motion.div>
                 </div>
 
                 <div className="max-w-4xl mx-auto flex flex-col gap-12 mb-32">
@@ -70,9 +98,13 @@ export default function LandingHowTo() {
                                     {step.description}
                                 </p>
                                 {step.link && (
-                                    <button className="text-xs font-bold underline underline-offset-8 decoration-foreground/20 hover:decoration-foreground transition-all">
+                                    <a
+                                        href={step.href || "#"}
+                                        download={step.download}
+                                        className="text-xs font-bold underline underline-offset-8 decoration-foreground/20 hover:decoration-foreground transition-all cursor-pointer"
+                                    >
                                         {step.link}
-                                    </button>
+                                    </a>
                                 )}
                             </div>
 

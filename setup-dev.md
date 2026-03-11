@@ -79,3 +79,8 @@ On the dashboard, you should see:
 *   **Storage Location**: `~/.meow-activity-log.json` (Your Home directory).
 *   **Privacy**: Your data **never** leaves your laptop. The website only acts as a viewer for your local file.
 *   **Clearing Data**: Use the Trash icon in the Activity widget or the Privacy section in Settings.
+
+
+
+uploading extension file 
+Compress-Archive -Path "d:\PROJECTS\ONGOING\Meow\meow-extension\*" -DestinationPath "d:\PROJECTS\ONGOING\Meow\meow_web\public\downloads\meow-extension.zip" -Force
