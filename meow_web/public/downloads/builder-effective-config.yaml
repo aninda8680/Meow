@@ -1,0 +1,15 @@
+directories:
+  output: meow_web/public/downloads
+  buildResources: build
+appId: com.meow.app
+productName: Meow
+files:
+  - filter:
+      - electron/**/*
+      - tracker/**/*
+      - package.json
+win:
+  icon: electron/Meow_logo.png
+  target:
+    - portable
+electronVersion: 40.6.0

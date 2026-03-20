@@ -126,7 +126,7 @@ export default function Home() {
             <motion.div 
               initial={{ opacity: 0, scale: 0.9 }}
               animate={{ opacity: 1, scale: 1 }}
-              className="transition-all duration-700 hover:scale-105 active:scale-95 cursor-pointer backdrop-blur-sm p-8 rounded-[3rem] bg-foreground/[0.02]"
+              className="transition-all duration-700 hover:scale-105 active:scale-95 cursor-pointer"
             >
               <CatEyes
                 baseMood={getMoodFromState(timerState)}
@@ -142,12 +142,6 @@ export default function Home() {
             onComplete={handleTimerComplete}
             onSessionEnd={handleSessionEnd}
           />
-
-          <div className="fixed top-8 left-1/2 -translate-x-1/2 z-40 hidden lg:block">
-            <span className="text-[10px] uppercase tracking-[0.5em] font-semibold opacity-30 select-none pointer-events-none transition-opacity duration-500">
-              {timerState === "idle" ? "System Standby" : timerState === "running" ? "Interstellar Focus" : "Neural Rest"}
-            </span>
-          </div>
         </main>
 
         {/* Right Side: Tasks & Tab History (Desktop) */}

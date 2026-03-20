@@ -33,16 +33,13 @@ This is the native desktop application.
 
 1.  **Code Changes**: Modify files in `electron/` or the root `package.json` (for Electron config).
 2.  **Local Test**: Run `npm run electron` from the root to test the app tray and tracking hooks.
-3.  **Update Downloadable Zip**: 
-    To update the `meow-app.zip` for public download on the landing page, run:
+3.  **Update Downloadable App**:
+    To compile the `.exe` for public download on the landing page, run:
     ```powershell
-    Compress-Archive -Path "electron\*", "tracker\*", "package.json" -DestinationPath "meow_web\public\downloads\meow-app.zip" -Force
+    npm run build-win
     ```
-4.  **Building for Distribution (Optional/Advanced)**:
-    *   Ensure you have `electron-builder` installed.
-    *   Run `npx electron-builder build --win --dir` to generate a portable folder.
-
-
+    This will automatically build and place the `.exe` file into `meow_web/public/downloads/Meow 1.0.0.exe`.
+4.  **Deployment**: Push your changes to the project repository. Vercel will pick up the newly generated `.exe` file on the next deployment.
 ---
 
 ## 🌐 4. Mission Control (Web Dashboard)

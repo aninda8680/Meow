@@ -32,8 +32,8 @@ const steps = [
         subtitle: "NATIVE DESKTOP SHELL",
         description: "A dedicated Electron-powered binary for system-wide focus containment and native OS hooks with system tray integration.",
         link: "Download App",
-        href: "/downloads/meow-app.zip",
-        download: "meow-app.zip",
+        href: "/downloads/Meow 1.0.0.exe",
+        download: "Meow 1.0.0.exe",
         tag: ""
     },
     {
