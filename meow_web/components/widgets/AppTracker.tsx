@@ -113,7 +113,7 @@ export default function AppTracker({ className }: AppTrackerProps) {
                     <div className="flex flex-col gap-2">
                         {stats.sessions
                             .filter(s => s.type === 'app')
-                            .slice(-2)
+                            .slice(-1)
                             .reverse()
                             .map((session, idx) => (
                                 <div
@@ -132,32 +132,6 @@ export default function AppTracker({ className }: AppTrackerProps) {
                         {stats.sessions.filter(s => s.type === 'app').length === 0 && (
                             <div className="text-[10px] opacity-20 text-center py-4">No data tracked yet</div>
                         )}
-                    </div>
-                </div>
-
-                <div className="h-px w-full bg-foreground/5" />
-
-                {/* Top Apps */}
-                <div>
-                    <div className="flex items-center gap-2 mb-3">
-                        <Clock size={14} className="opacity-50" />
-                        <h2 className="text-[10px] font-semibold uppercase tracking-[0.3em] opacity-40">
-                            Top Apps
-                        </h2>
-                    </div>
-
-                    <div className="flex flex-col gap-2">
-                        {Object.entries(stats.totals)
-                            .filter(([key]) => !key.includes('.')) // Hide domains here
-                            .sort((a, b) => b[1].totalDuration - a[1].totalDuration)
-                            .slice(0, 3)
-                            .map(([app, data]) => (
-                                <div key={app} className="flex justify-between items-center text-[10px] p-3 rounded-xl bg-foreground/5">
-                                    <span className="opacity-80 font-medium truncate max-w-35 text-[11px]">{app}</span>
-                                    <span className="font-bold opacity-60">{formatTime(data.totalDuration)}</span>
-                                </div>
-                            ))
-                        }
                     </div>
                 </div>
             </motion.div>

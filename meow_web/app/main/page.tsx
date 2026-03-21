@@ -8,6 +8,7 @@ import { SettingsButton } from "@/components/SettingsButton";
 import TaskSection from "@/components/widgets/TaskSection";
 import AppTracker from "@/components/widgets/AppTracker";
 import TabTracker from "@/components/widgets/TabTracker";
+import { ReportWidget } from "@/components/widgets/ReportWidget";
 import CompletionToast from "@/components/CompletionToast";
 import { BackgroundBeamsWithCollision } from "@/components/ui/background-beams-with-collision";
 // import WalkingCat from "@/components/WalkingCat";
@@ -109,9 +110,13 @@ export default function Home() {
       <div className="relative min-h-screen w-full flex flex-col lg:flex-row items-center justify-center p-6 lg:p-12 gap-8 lg:gap-0">
         
         {/* Left Side: App Tracker (Desktop) */}
-        <div className="lg:fixed lg:bottom-12 lg:left-12 z-40 w-full lg:w-auto flex flex-col items-center lg:items-start animate-enter [animation-delay:200ms]">
+        <div className="lg:fixed lg:bottom-12 lg:left-12 z-40 w-full lg:w-auto flex flex-col items-center lg:items-start animate-enter [animation-delay:200ms] gap-6">
           <AnimatePresence>
             {widgets.activity && <AppTracker />}
+          </AnimatePresence>
+
+          <AnimatePresence>
+            {widgets.activity && <ReportWidget />}
           </AnimatePresence>
         </div>
 

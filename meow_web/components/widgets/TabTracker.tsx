@@ -131,35 +131,6 @@ export default function TabTracker({ className }: TabTrackerProps) {
             )}
           </div>
         </div>
-
-        <div className="h-px bg-foreground/10" />
-
-        {/* Aggregated Totals */}
-        <div>
-          <div className="flex items-center gap-2 mb-3">
-            <Clock size={14} />
-            <h2 className="text-[10px] font-semibold uppercase tracking-[0.3em] opacity-40">
-              Top Websites
-            </h2>
-          </div>
-
-          <div className="flex flex-col gap-2">
-            {tabTotals.map(([domain, data]) => (
-              <div
-                key={domain}
-                className="p-3 rounded-xl bg-foreground/5 flex justify-between text-xs items-center"
-              >
-                <span className="truncate max-w-35 text-[11px] font-medium">{domain}</span>
-                <span className="font-bold text-[10px] opacity-60">
-                  {formatDuration(data.totalDuration)}
-                </span>
-              </div>
-            ))}
-            {tabTotals.length === 0 && (
-              <div className="text-[10px] opacity-20 text-center py-4">No sessions yet</div>
-            )}
-          </div>
-        </div>
       </motion.div>
 
       <TabModal 
