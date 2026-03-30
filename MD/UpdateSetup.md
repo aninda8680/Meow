@@ -18,10 +18,11 @@ When you modify files in the `meow-extension/` directory:
 ---
 
 ## 📜 2. App Tracker (Node.js / NPX)
-The NPX command `npx meow-tracker` allows users to run the tracker without cloning the repo.
+The NPX command `npx meow-tracker` works only after the package is published to npm.
 
 1.  **Code Changes**: Modify files in the `tracker/` directory.
 2.  **Testing**: Run `node tracker/tracker.js` locally to verify changes.
+3.  **Repo-local fallback**: In a cloned repo, run `npm run tracker` from root.
 3.  **Updating NPX**:
     *   If you have published `meow-tracker` to npm, increment the version in `tracker/package.json` and run `npm publish` from the `tracker/` folder.
     *   If you are using a direct GitHub link, simply push your changes to the main branch of your repository.

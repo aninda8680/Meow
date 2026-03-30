@@ -16,3 +16,12 @@ out/
 
 # logs
 *.log
+
+# generated release artifacts
+release/
+meow_web/public/downloads/win-unpacked/
+meow_web/public/downloads/builder-debug.yml
+meow_web/public/downloads/builder-effective-config.yaml
+
+# macOS archive metadata
+**/__MACOSX/

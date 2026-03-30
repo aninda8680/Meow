@@ -11,7 +11,6 @@ import TabTracker from "@/components/widgets/TabTracker";
 import { ReportWidget } from "@/components/widgets/ReportWidget";
 import CompletionToast from "@/components/CompletionToast";
 import { BackgroundBeamsWithCollision } from "@/components/ui/background-beams-with-collision";
-// import WalkingCat from "@/components/WalkingCat";
 
 
 type TimerState = "idle" | "running" | "paused";
@@ -20,7 +19,6 @@ type TimerMode = "countup" | "countdown";
 export default function Home() {
   const [timerState, setTimerState] = useState<TimerState>("idle");
   const [mode, setMode] = useState<TimerMode>("countup");
-  const [catXFraction, setCatXFraction] = useState<number | null>(null);
   const [userInfo, setUserInfo] = useState({ name: "", avatar: "users-1.svg" });
   const [activeTaskId, setActiveTaskId] = useState<string | null>(null);
   const [showCompletion, setShowCompletion] = useState(false);
@@ -82,10 +80,6 @@ export default function Home() {
     }
   };
 
-  const handleCatPosition = useCallback((xFrac: number) => {
-    setCatXFraction(xFrac);
-  }, []);
-
   const handleTimerComplete = useCallback(() => {
     setShowCompletion(true);
   }, []);
@@ -135,7 +129,6 @@ export default function Home() {
             >
               <CatEyes
                 baseMood={getMoodFromState(timerState)}
-                catXFraction={catXFraction}
               />
             </motion.div>
           </div>
@@ -225,9 +218,6 @@ export default function Home() {
           </div>
         </div>
       </footer>
-
-      {/* Walking cat lives at the bottom of the screen */}
-      {/* <WalkingCat onPositionChange={handleCatPosition} /> */}
 
       <style jsx global>{`
         @keyframes bg-pulse {

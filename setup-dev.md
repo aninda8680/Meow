@@ -14,14 +14,12 @@ Clone the repo and install dependencies in all relevant folders:
 # Install root dependencies
 npm install
 
-# Install tracker dependencies
-cd tracker
-npm install
-
 # Install web dashboard dependencies
-cd ../meow_web
+cd meow_web
 npm install
 ```
+
+After root install, `meow-tracker` is available as a local binary (via `file:./tracker`).
 
 ### 2. Running for Development
 The root `package.json` has a master command to start both the Frontend and the Tracker Backend at once:
@@ -56,6 +54,12 @@ To track your app switching locally, you need the backend running on your machin
 Open your terminal and type:
 ```powershell
 npx meow-tracker
+```
+This works if the package is published on npm or if you're inside a cloned repo that has run `npm install` at the root.
+
+If you're in a cloned repo and `npx meow-tracker` is unavailable, run:
+```powershell
+npm run tracker
 ```
 
 **Option B: The Tray App (Prettiest)**

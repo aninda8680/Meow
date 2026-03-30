@@ -19,12 +19,8 @@ Open your terminal in the root folder of the project and run:
 # Install root dependencies (Concurrently, Electron, etc.)
 npm install
 
-# Install tracker dependencies
-cd tracker
-npm install
-
 # Install Web Dashboard dependencies
-cd ../meow_web
+cd meow_web
 npm install
 ```
 
@@ -45,10 +41,16 @@ To track your website usage, you need to load the Meow extension into your brows
 
 ## 🟢 Step 3: Run the Ecosystem (Zero-Clone Setup)
 
-The easiest way to run Meow is to use **npx**. You don't even need to clone this repository! Just run this in your terminal:
+If `meow-tracker` is published to npm, you can run it with **npx**:
 
 ```powershell
 npx meow-tracker
+```
+
+If you're running from a cloned repo, use:
+
+```powershell
+npm run tracker
 ```
 
 ### What happens now?
