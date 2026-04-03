@@ -11,6 +11,8 @@ import TabTracker from "@/components/widgets/TabTracker";
 import { ReportWidget } from "@/components/widgets/ReportWidget";
 import CompletionToast from "@/components/CompletionToast";
 import { BackgroundBeamsWithCollision } from "@/components/ui/background-beams-with-collision";
+import { createClient } from "@/lib/supabase/client";
+import { LogOut } from "lucide-react";
 
 
 type TimerState = "idle" | "running" | "paused";
@@ -59,6 +61,22 @@ export default function Home() {
     return () => window.removeEventListener('user-settings-changed', loadUserSettings);
   }, [loadUserSettings]);
 
+  useEffect(() => {
+    const syncUser = async () => {
+      const supabase = createClient();
+      const { data: { session } } = await supabase.auth.getSession();
+      if (session?.user) {
+        let name = session.user.user_metadata?.full_name || session.user.user_metadata?.name || session.user.email?.split('@')[0];
+        if (name) {
+          localStorage.setItem("meow-username", name);
+          setUserInfo(prev => ({ ...prev, name }));
+        }
+      }
+    };
+    syncUser();
+  }, []);
+
+
   // Persist mode and active task
   useEffect(() => {
     if (mode) localStorage.setItem("meow-mode", mode);
@@ -92,6 +110,13 @@ export default function Home() {
       }));
     }
   }, [activeTaskId]);
+
+  const handleLogout = async () => {
+    const supabase = createClient();
+    await supabase.auth.signOut();
+    localStorage.removeItem("meow-username");
+    window.location.href = "/";
+  };
 
   const Component = widgets.rain ? BackgroundBeamsWithCollision : "div";
 
@@ -179,9 +204,18 @@ export default function Home() {
           </div>
           <div className="flex flex-col opacity-40 group-hover:opacity-100 transition-opacity">
             <span className="text-[10px] font-semibold uppercase tracking-[0.3em] leading-none mb-1">Pilot</span>
-            <span className="text-xs font-semibold truncate max-w-[120px]">
-              {userInfo.name || "Stray Cat"}
-            </span>
+            <div className="flex items-center gap-2">
+              <span className="text-xs font-semibold truncate max-w-[120px]">
+                {userInfo.name || "Stray Cat"}
+              </span>
+              <button 
+                onClick={handleLogout}
+                className="opacity-0 group-hover:opacity-100 transition-opacity hover:text-red-500 cursor-pointer p-0.5"
+                title="Log out"
+              >
+                <LogOut size={12} />
+              </button>
+            </div>
           </div>
         </motion.div>
       </div>

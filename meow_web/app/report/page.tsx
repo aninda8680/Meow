@@ -83,7 +83,7 @@ export default function ReportPage() {
         <div className="max-w-4xl mx-auto space-y-8">
             {/* Header */}
             <div className="flex items-center justify-between">
-                <Link href="/main" className="flex items-center gap-2 text-foreground/50 hover:text-foreground transition-colors group">
+                <Link href="/dashboard" className="flex items-center gap-2 text-foreground/50 hover:text-foreground transition-colors group">
                     <ArrowLeft size={16} className="group-hover:-translate-x-1 transition-transform" />
                     <span className="uppercase text-[10px] font-bold tracking-widest">Back to Hub</span>
                 </Link>

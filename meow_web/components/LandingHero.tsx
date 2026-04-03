@@ -133,7 +133,7 @@ export default function LandingHero() {
                         Build real discipline.                    </p>
 
                     <div className="flex flex-wrap gap-6 items-center">
-                        <Link href="/main">
+                        <Link href="/dashboard">
                             <button className="group relative px-10 py-5 bg-foreground text-background font-bold text-xl uppercase tracking-widest transition-all shadow-[4px_4px_0px_rgba(0,0,0,0.5)] dark:shadow-[4px_4px_0px_rgba(255,255,255,0.2)] hover:shadow-none hover:translate-x-[4px] hover:translate-y-[4px] active:scale-95 border border-foreground/10" style={{ fontFamily: "var(--font-malinton)" }}>
                                 TRY IT!
                                 <div className="absolute -top-1 -right-1 w-2 h-2 bg-red-500 animate-pulse" />
@@ -176,32 +176,17 @@ export default function LandingHero() {
             A heavy-glass effect enclosure
           */}
                     <motion.div
-                        whileHover={{ scale: 1.02 }}
-                        className="relative z-10 w-full max-w-md aspect-square rounded-[4rem] bg-gradient-to-br from-foreground/[0.08] to-transparent p-[1px] shadow-2xl backdrop-blur-3xl overflow-hidden"
+                        className="relative z-10 w-full max-w-md aspect-square flex flex-col items-center justify-center p-16"
                     >
-                        {/* Glossy Overlay */}
-                        <div className="absolute inset-0 bg-gradient-to-tr from-white/10 to-transparent pointer-events-none" />
-
-                        <div className="w-full h-full bg-background/50 dark:bg-black/50 rounded-[4rem] flex flex-col items-center justify-between p-16 relative">
-
-
-
-                            {/* EAR ACCENTS - Refined */}
-                            <div className="absolute -top-4 left-1/4 w-12 h-12 bg-background border border-foreground/10 rounded-xl rotate-[15deg] group-hover:rotate-[25deg] transition-transform" />
-                            <div className="absolute -top-4 right-1/4 w-12 h-12 bg-background border border-foreground/10 rounded-xl -rotate-[15deg] group-hover:rotate-[-25deg] transition-transform" />
-
-                            <motion.div
-                                style={{ y: y2 }}
-                                className="transform scale-[1.4] mt-12"
-                            >
-                                <CatEyes
-                                    catXFraction={mouseXSpring}
-                                    catYFraction={mouseYSpring}
-                                />
-                            </motion.div>
-
-
-                        </div>
+                        <motion.div
+                            style={{ y: y2 }}
+                            className="transform scale-[1.4]"
+                        >
+                            <CatEyes
+                                catXFraction={mouseXSpring}
+                                catYFraction={mouseYSpring}
+                            />
+                        </motion.div>
                     </motion.div>
 
                 </motion.div>

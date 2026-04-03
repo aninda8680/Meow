@@ -34,7 +34,7 @@ export default function LandingNavbar() {
                 </div>
 
                 <div className="flex items-center gap-4">
-                    <Link href="/main">
+                    <Link href="/login">
                         <button className="px-8 py-3 bg-foreground text-background rounded-xl font-bold text-xs uppercase tracking-widest hover:scale-[1.05] active:scale-95 transition-all shadow-lg hover:shadow-2xl" style={{ fontFamily: "var(--font-malinton)" }}>
                             Try It
                         </button>

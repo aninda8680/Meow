@@ -43,7 +43,7 @@ const steps = [
         subtitle: "WEB CONSOLE",
         description: "Initialize the web-based dashboard. This is your primary interface for focus visualization and deep session management.",
         link: "Open Dashboard",
-        href: "/main",
+        href: "/dashboard",
         tag: ""
     }
 ];
