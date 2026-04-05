@@ -43,7 +43,15 @@ export async function signup(formData: FormData) {
 export async function signInWithGoogle() {
   const supabase = await createClient()
 
-  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000'
+  let siteUrl =
+    process.env.NEXT_PUBLIC_SITE_URL ??
+    (process.env.NEXT_PUBLIC_VERCEL_URL
+      ? `https://${process.env.NEXT_PUBLIC_VERCEL_URL}`
+      : null)
+
+  if (!siteUrl) {
+    throw new Error("NEXT_PUBLIC_SITE_URL is not defined")
+  }
 
   const { data, error } = await supabase.auth.signInWithOAuth({
     provider: 'google',
