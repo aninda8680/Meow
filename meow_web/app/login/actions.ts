@@ -43,20 +43,22 @@ export async function signup(formData: FormData) {
 export async function signInWithGoogle() {
   const supabase = await createClient()
 
-  let siteUrl =
-    process.env.NEXT_PUBLIC_SITE_URL ??
-    (process.env.NEXT_PUBLIC_VERCEL_URL
-      ? `https://${process.env.NEXT_PUBLIC_VERCEL_URL}`
-      : null)
+  const siteUrl =
+    process.env.NEXT_PUBLIC_SITE_URL ||
+    `https://${process.env.VERCEL_URL}`
 
   if (!siteUrl) {
-    throw new Error("NEXT_PUBLIC_SITE_URL is not defined")
+    throw new Error("SITE URL not defined")
   }
+
+  // ✅ SAFE URL construction (this is the key fix)
+  const redirectUrl = new URL('/auth/callback', siteUrl)
+  redirectUrl.searchParams.set('next', '/dashboard')
 
   const { data, error } = await supabase.auth.signInWithOAuth({
     provider: 'google',
     options: {
-      redirectTo: `${siteUrl}/auth/callback?next=/dashboard`,
+      redirectTo: redirectUrl.toString(),
     },
   })
 
