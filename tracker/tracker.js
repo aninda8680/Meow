@@ -11,13 +11,13 @@ const app = express();
 app.use(cors());
 
 // REST endpoint for initial data sync
-app.get("/stats", (req, res) => {
-    res.json(getStats());
+app.get("/stats", async (req, res) => {
+    res.json(await getStats());
 });
 
 // Endpoint to clear data
-app.post("/clear", (req, res) => {
-    clearDB();
+app.post("/clear", async (req, res) => {
+    await clearDB();
     res.json({ success: true });
 });
 
@@ -64,12 +64,12 @@ setInterval(async () => {
             console.log(`✨ Scope Change: ${currentApp} | ${currentTitle}`);
             const duration = Math.floor((Date.now() - startTime) / 1000);
             if (duration > 1) { // Only log if > 1s
-                logSession(lastApp, lastTitle, duration);
+                await logSession(lastApp, lastTitle, duration);
             }
             startTime = Date.now();
 
             // Broadcast new stats after logging a session
-            broadcast({ type: 'stats', data: getStats() });
+            broadcast({ type: 'stats', data: await getStats() });
         }
 
         lastApp = currentApp;
@@ -87,19 +87,19 @@ setInterval(async () => {
     }
 }, 500);
 
-wss.on("connection", (ws) => {
+wss.on("connection", async (ws) => {
     console.log("🔗 Frontend connected");
-    ws.send(JSON.stringify({ type: 'init', data: getStats() }));
+    ws.send(JSON.stringify({ type: 'init', data: await getStats() }));
 
-    ws.on("message", (message) => {
+    ws.on("message", async (message) => {
         try {
             const data = JSON.parse(message);
             if (data.type === 'TAB_LOG') {
-                logTab(data.domain, data.title, data.duration, data.id);
-                broadcast({ type: 'stats', data: getStats() });
+                await logTab(data.domain, data.title, data.duration, data.id);
+                broadcast({ type: 'stats', data: await getStats() });
             } else if (data.type === 'CLEAR_DATA') {
-                clearDB();
-                broadcast({ type: 'stats', data: getStats() });
+                await clearDB();
+                broadcast({ type: 'stats', data: await getStats() });
             }
         } catch (e) {
             console.error("Msg error:", e);

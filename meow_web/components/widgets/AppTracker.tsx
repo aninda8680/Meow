@@ -17,7 +17,7 @@ export default function AppTracker({ className }: AppTrackerProps) {
     const [isModalOpen, setIsModalOpen] = useState(false);
 
     // Calculate total app focus from stats
-    const totalAppTime = Object.values(stats.totals).reduce((acc, curr) => acc + curr.totalDuration, 0);
+    const totalAppTime = Object.values(stats?.totals || {}).reduce((acc, curr) => acc + curr.totalDuration, 0);
 
     const handleClear = () => {
         if (confirm("Are you sure you want to clear all local activity history? This cannot be undone.")) {

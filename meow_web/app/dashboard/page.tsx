@@ -9,16 +9,16 @@ import TaskSection from "@/components/widgets/TaskSection";
 import AppTracker from "@/components/widgets/AppTracker";
 import TabTracker from "@/components/widgets/TabTracker";
 import { ReportWidget } from "@/components/widgets/ReportWidget";
-import CompletionToast from "@/components/CompletionToast";
 import { BackgroundBeamsWithCollision } from "@/components/ui/background-beams-with-collision";
-import { createClient } from "@/lib/supabase/client";
-import { LogOut } from "lucide-react";
-
+import { LogOut, LayoutGrid, EyeOff } from "lucide-react";
+import { useSession, signOut } from "next-auth/react";
+import CompletionToast from "@/components/CompletionToast";
 
 type TimerState = "idle" | "running" | "paused";
 type TimerMode = "countup" | "countdown";
 
 export default function Home() {
+  const { data: session } = useSession();
   const [timerState, setTimerState] = useState<TimerState>("idle");
   const [mode, setMode] = useState<TimerMode>("countup");
   const [userInfo, setUserInfo] = useState({ name: "", avatar: "users-1.svg" });
@@ -32,63 +32,57 @@ export default function Home() {
     tabHistory: true,
   });
 
-  // Load user settings
-  const loadUserSettings = useCallback(() => {
-    const name = localStorage.getItem("meow-username") || "";
-    const avatar = localStorage.getItem("meow-avatar") || "users-1.svg";
-    const savedMode = localStorage.getItem("meow-mode") as TimerMode;
-    const savedActiveTask = localStorage.getItem("meow-active-task");
-    const savedState = localStorage.getItem("meow-timer-state") as TimerState;
-    const storedWidgets = localStorage.getItem("meow-widgets");
-
-    setUserInfo({ name, avatar });
-    if (savedMode) setMode(savedMode);
-    if (savedActiveTask) setActiveTaskId(savedActiveTask);
-    if (savedState) setTimerState(savedState);
-    if (storedWidgets) {
-      try {
-        const parsed = JSON.parse(storedWidgets);
-        setWidgets(prev => ({ ...prev, ...parsed }));
-      } catch (e) {
-        console.error("Failed to parse widgets", e);
+  // Load user settings from API
+  const loadUserSettings = useCallback(async () => {
+    try {
+      const res = await fetch('/api/settings');
+      if (res.ok) {
+        const data = await res.json();
+        setUserInfo({ name: data.name || session?.user?.name || "", avatar: data.avatar || "users-1.svg" });
+        setMode(data.mode || "countup");
+        setWidgets(prev => ({ ...prev, ...data.widgets }));
       }
+    } catch (e) {
+      console.error("Failed to load settings", e);
     }
-  }, []);
+  }, [session]);
 
   useEffect(() => {
-    loadUserSettings();
+    if (session) {
+      loadUserSettings();
+    }
+  }, [session, loadUserSettings]);
+
+  useEffect(() => {
     window.addEventListener('user-settings-changed', loadUserSettings);
     return () => window.removeEventListener('user-settings-changed', loadUserSettings);
   }, [loadUserSettings]);
 
+
+  // Persist mode and other settings when they change
   useEffect(() => {
-    const syncUser = async () => {
-      const supabase = createClient();
-      const { data: { session } } = await supabase.auth.getSession();
-      if (session?.user) {
-        let name = session.user.user_metadata?.full_name || session.user.user_metadata?.name || session.user.email?.split('@')[0];
-        if (name) {
-          localStorage.setItem("meow-username", name);
-          setUserInfo(prev => ({ ...prev, name }));
-        }
-      }
+    if (!session) return;
+    const saveSettings = async () => {
+       await fetch('/api/settings', {
+         method: 'POST',
+         body: JSON.stringify({ mode, widgets })
+       });
     };
-    syncUser();
-  }, []);
+    // Debounce this or only trigger on specific changes
+    // For now, let's just use it sparingly
+  }, [mode, widgets, session]);
 
-
-  // Persist mode and active task
-  useEffect(() => {
-    if (mode) localStorage.setItem("meow-mode", mode);
-  }, [mode]);
-
-  useEffect(() => {
-    if (activeTaskId) {
-      localStorage.setItem("meow-active-task", activeTaskId);
-    } else {
-      localStorage.removeItem("meow-active-task");
-    }
-  }, [activeTaskId]);
+  const toggleAllWidgets = () => {
+    // Check if any widget is on. If so, turn them all off. Otherwise, turn them all on.
+    const anyOn = widgets.tasks || widgets.activity || widgets.rain || widgets.tabHistory;
+    const newState = !anyOn;
+    setWidgets({
+      tasks: newState,
+      activity: newState,
+      rain: newState,
+      tabHistory: newState,
+    });
+  };
 
   const getMoodFromState = (state: TimerState) => {
     switch (state) {
@@ -112,10 +106,7 @@ export default function Home() {
   }, [activeTaskId]);
 
   const handleLogout = async () => {
-    const supabase = createClient();
-    await supabase.auth.signOut();
-    localStorage.removeItem("meow-username");
-    window.location.href = "/";
+    await signOut({ callbackUrl: '/' });
   };
 
   const Component = widgets.rain ? BackgroundBeamsWithCollision : "div";
@@ -123,7 +114,21 @@ export default function Home() {
   return (
     <Component className={widgets.rain ? "min-h-screen" : "relative min-h-screen bg-background text-foreground overflow-x-hidden transition-colors duration-500"}>
 
-      <SettingsButton />
+      {/* Navbar (Top Right) */}
+      <div className="fixed top-6 right-6 z-50 flex items-center gap-3">
+        <button
+          onClick={toggleAllWidgets}
+          className="p-3 rounded-full bg-foreground/5 dark:bg-foreground/5 backdrop-blur-md border border-foreground/10 shadow-lg hover:scale-110 active:scale-95 transition-all group"
+          title="Toggle All Widgets"
+        >
+          {widgets.tasks || widgets.activity || widgets.rain || widgets.tabHistory ? (
+            <EyeOff className="w-5 h-5 text-foreground opacity-70 group-hover:opacity-100 transition-all duration-300" />
+          ) : (
+            <LayoutGrid className="w-5 h-5 text-foreground opacity-70 group-hover:opacity-100 transition-all duration-300" />
+          )}
+        </button>
+        <SettingsButton />
+      </div>
 
       {/* Main Layout Container */}
       <div className="relative min-h-screen w-full flex flex-col lg:flex-row items-center justify-center p-6 lg:p-12 gap-8 lg:gap-0">

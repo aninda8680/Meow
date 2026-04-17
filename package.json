@@ -10,7 +10,8 @@
     "start-local": "node start-meow.js",
     "tracker": "cd tracker && node tracker.js",
     "electron": "electron .",
-    "build-win": "electron-builder --win"
+    "build-win": "electron-builder --win",
+    "release": "powershell -ExecutionPolicy Bypass -File release.ps1"
   },
   "dependencies": {
     "active-win": "^8.2.1",

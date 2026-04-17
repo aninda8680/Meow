@@ -1,72 +1,43 @@
 'use server'
 
-import { revalidatePath } from 'next/cache'
 import { redirect } from 'next/navigation'
-import { createClient } from '../../lib/supabase/server'
+import dbConnect from '../../lib/mongodb'
+import User from '../../models/User'
+import bcrypt from 'bcryptjs'
 
 export async function login(formData: FormData) {
-  const supabase = await createClient()
-
-  const data = {
-    email: formData.get('email') as string,
-    password: formData.get('password') as string,
-  }
-
-  const { error } = await supabase.auth.signInWithPassword(data)
-
-  if (error) {
-    redirect('/login?message=Invalid credentials')
-  }
-
-  revalidatePath('/dashboard', 'layout')
-  redirect('/dashboard')
+  // This will be handled by the client-side signIn call from next-auth/react
+  // But we can keep it here if we use a custom server-side sign-in flow
+  // For now, we'll let the client handle it via signIn('credentials', ...)
 }
 
 export async function signup(formData: FormData) {
-  const supabase = await createClient()
+  const name = formData.get('name') as string
+  const email = formData.get('email') as string
+  const password = formData.get('password') as string
 
-  const data = {
-    email: formData.get('email') as string,
-    password: formData.get('password') as string,
+  if (!email || !password) {
+    redirect('/login?message=Email and password are required')
   }
 
-  const { error } = await supabase.auth.signUp(data)
+  await dbConnect()
 
-  if (error) {
-    redirect('/login?message=Could not create user')
+  const existingUser = await User.findOne({ email })
+  if (existingUser) {
+    redirect('/login?message=User already exists')
   }
 
-  revalidatePath('/', 'layout')
-  redirect('/login?message=Check email to continue sign in process')
+  const hashedPassword = await bcrypt.hash(password, 10)
+  
+  await User.create({
+    name,
+    email,
+    password: hashedPassword,
+  })
+
+  redirect('/login?message=Signup successful! You can now login.')
 }
 
 export async function signInWithGoogle() {
-  const supabase = await createClient()
-
-  const siteUrl =
-    process.env.NEXT_PUBLIC_SITE_URL ||
-    `https://${process.env.VERCEL_URL}`
-
-  if (!siteUrl) {
-    throw new Error("SITE URL not defined")
-  }
-
-  // ✅ SAFE URL construction (this is the key fix)
-  const redirectUrl = new URL('/auth/callback', siteUrl)
-  redirectUrl.searchParams.set('next', '/dashboard')
-
-  const { data, error } = await supabase.auth.signInWithOAuth({
-    provider: 'google',
-    options: {
-      redirectTo: redirectUrl.toString(),
-    },
-  })
-
-  if (error) {
-    redirect('/login?message=Could not authenticate with Google')
-  }
-
-  if (data.url) {
-    redirect(data.url)
-  }
+  // This is usually handled by signIn('google') on the client side
 }

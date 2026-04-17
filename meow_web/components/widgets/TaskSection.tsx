@@ -23,24 +23,24 @@ export default function TaskSection({ activeTaskId, onSetActiveTask, className }
     const [newTaskTitle, setNewTaskTitle] = useState("");
     const [isSettingsOpen, setIsSettingsOpen] = useState(false);
 
-    // Load tasks from localStorage
+    // Load tasks from API
     useEffect(() => {
-        const saved = localStorage.getItem("meow-tasks");
-        if (saved) {
+        const loadTasks = async () => {
             try {
-                setTasks(JSON.parse(saved));
+                const res = await fetch("/api/tasks");
+                if (res.ok) {
+                    const data = await res.json();
+                    setTasks(data);
+                }
             } catch (e) {
-                console.error("Failed to parse tasks", e);
+                console.error("Failed to fetch tasks", e);
             }
-        }
+        };
+        loadTasks();
     }, []);
 
-    // Save tasks to localStorage
-    useEffect(() => {
-        localStorage.setItem("meow-tasks", JSON.stringify(tasks));
-        // Dispatch custom event so other components can know if needed
-        window.dispatchEvent(new CustomEvent("meow-tasks-updated", { detail: tasks }));
-    }, [tasks]);
+    // Save tasks is now handled by individual actions (addTask, toggleComplete, etc.)
+    // to keep it in sync with MongoDB.
 
     // Listen for focus time updates from the timer logic (global event for simplicity)
     useEffect(() => {
@@ -57,30 +57,55 @@ export default function TaskSection({ activeTaskId, onSetActiveTask, className }
         return () => window.removeEventListener("meow-focus-update", handleFocusUpdate);
     }, []);
 
-    const addTask = (e: React.FormEvent) => {
+    const addTask = async (e: React.FormEvent) => {
         e.preventDefault();
         if (!newTaskTitle.trim()) return;
 
-        const newTask: Task = {
-            id: crypto.randomUUID(),
-            title: newTaskTitle.trim(),
-            completed: false,
-            focusTime: 0,
-        };
+        const res = await fetch("/api/tasks", {
+            method: "POST",
+            body: JSON.stringify({
+                title: newTaskTitle.trim(),
+                completed: false,
+                focusTime: 0,
+            }),
+        });
 
-        setTasks([...tasks, newTask]);
-        setNewTaskTitle("");
+        if (res.ok) {
+            const newTask = await res.json();
+            setTasks([...tasks, newTask]);
+            setNewTaskTitle("");
+        }
     };
 
-    const deleteTask = (id: string) => {
-        setTasks(tasks.filter(t => t.id !== id));
-        if (activeTaskId === id) onSetActiveTask(null);
+    const deleteTask = async (id: string) => {
+        const res = await fetch("/api/tasks", {
+            method: "DELETE",
+            body: JSON.stringify({ id }),
+        });
+
+        if (res.ok) {
+            setTasks(tasks.filter(t => (t as any)._id !== id));
+            if (activeTaskId === id) onSetActiveTask(null);
+        }
     };
 
-    const toggleComplete = (id: string) => {
-        setTasks(tasks.map(t =>
-            t.id === id ? { ...t, completed: !t.completed } : t
-        ));
+    const toggleComplete = async (id: string) => {
+        const task = tasks.find(t => (t as any)._id === id);
+        if (!task) return;
+
+        const res = await fetch("/api/tasks", {
+            method: "PUT",
+            body: JSON.stringify({
+                id,
+                completed: !task.completed,
+            }),
+        });
+
+        if (res.ok) {
+            setTasks(tasks.map(t =>
+                (t as any)._id === id ? { ...t, completed: !t.completed } : t
+            ));
+        }
     };
 
     const formatFocusTime = (seconds: number) => {
@@ -136,18 +161,18 @@ export default function TaskSection({ activeTaskId, onSetActiveTask, className }
                         ) : (
                             tasks.map((task) => (
                                 <motion.div
-                                    key={task.id}
+                                    key={(task as any)._id}
                                     layout
                                     initial={{ opacity: 0, y: 5 }}
                                     animate={{ opacity: 1, y: 0 }}
                                     exit={{ opacity: 0, scale: 0.95 }}
-                                    className={`group flex items-center gap-3 p-2.5 rounded-2xl transition-all ${activeTaskId === task.id
+                                    className={`group flex items-center gap-3 p-2.5 rounded-2xl transition-all ${activeTaskId === (task as any)._id
                                         ? "bg-foreground/8 shadow-sm"
                                         : "hover:bg-foreground/4"
                                         }`}
                                 >
                                     <button
-                                        onClick={() => toggleComplete(task.id)}
+                                        onClick={() => toggleComplete((task as any)._id)}
                                         className="shrink-0 transition-all"
                                     >
                                         {task.completed ? (
@@ -159,7 +184,7 @@ export default function TaskSection({ activeTaskId, onSetActiveTask, className }
 
                                     <div
                                         className="flex-1 min-w-0 cursor-pointer"
-                                        onClick={() => onSetActiveTask(task.id === activeTaskId ? null : task.id)}
+                                        onClick={() => onSetActiveTask((task as any)._id === activeTaskId ? null : (task as any)._id)}
                                     >
                                         <p className={`text-[11px] truncate font-semibold transition-all ${task.completed ? "line-through opacity-20" : "opacity-80 group-hover:opacity-100"}`}>
                                             {task.title}
@@ -168,7 +193,7 @@ export default function TaskSection({ activeTaskId, onSetActiveTask, className }
                                             <span className="text-[7px] uppercase tracking-wider opacity-40 font-bold">
                                                 {formatFocusTime(task.focusTime)}
                                             </span>
-                                            {activeTaskId === task.id && !task.completed && (
+                                            {activeTaskId === (task as any)._id && !task.completed && (
                                                 <span className="flex items-center gap-0.5 text-[7px] uppercase font-black text-foreground/60 animate-pulse">
                                                     Active
                                                 </span>
@@ -177,7 +202,7 @@ export default function TaskSection({ activeTaskId, onSetActiveTask, className }
                                     </div>
 
                                     <button
-                                        onClick={() => deleteTask(task.id)}
+                                        onClick={() => deleteTask((task as any)._id)}
                                         className="opacity-0 group-hover:opacity-20 hover:opacity-60! transition-opacity p-1"
                                     >
                                         <Trash2 size={10} />

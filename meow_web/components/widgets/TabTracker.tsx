@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { motion } from "framer-motion";
 import { Clock, History, Maximize2 } from "lucide-react";
 import { useSystemTracker } from "@/hooks/useSystemTracker";
@@ -14,6 +14,7 @@ export default function TabTracker({ className }: TabTrackerProps) {
   const { logTabActivity, stats, status } = useSystemTracker();
   const [extensionInstalled, setExtensionInstalled] = useState(false);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const syncedLocally = useRef(new Set<number>());
 
   // Fetch data from extension
   useEffect(() => {
@@ -35,7 +36,8 @@ export default function TabTracker({ className }: TabTrackerProps) {
 
         // Only log new sessions that haven't been tracked yet
         sessions.forEach((s: any) => {
-          if (!trackedIds.has(s.id)) {
+          if (!trackedIds.has(s.id) && !syncedLocally.current.has(s.id)) {
+            syncedLocally.current.add(s.id);
             logTabActivity(s.domain, s.title, s.duration, s.id);
           }
         });

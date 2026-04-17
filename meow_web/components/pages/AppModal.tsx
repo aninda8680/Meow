@@ -30,7 +30,7 @@ export function AppModal({ isOpen, onClose }: AppModalProps) {
         return `${secs}s`;
     };
 
-    const appTotals = Object.entries(stats.totals)
+    const appTotals = Object.entries(stats?.totals || {})
         .filter(([key]) => {
             // Filter for apps (heuristic: doesn't look like domain and not a website session)
             const isDomain = key.includes('.') && key.split('.').pop()!.length >= 2;

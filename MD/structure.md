@@ -1,337 +1,75 @@
-# Meow Cross-Device Architecture and Integration
+# Meow Ecosystem Architecture & Data Flow
 
-## 1. Goal
+This document details how the three core components of Meow—the **Browser Extension (Tab Tracker)**, the **Windows App Tracker**, and the **Web Dashboard**—communicate and synchronize data to provide a unified productivity tracking experience.
 
-This document explains how Meow can evolve from a local desktop tracker into a cross-device attention intelligence platform.
+## 1. The Three Core Components
 
-Target outcome:
-- Track productive activity on desktop (for example coding in VS Code).
-- Track distractive activity on phone (for example Instagram Reels or YouTube Shorts).
-- Merge both timelines into one truth source.
-- Compute overlap-based signals that reveal hidden distraction.
+### A. Tab Tracker (Browser Extension)
+- **Location:** `meow-extension/`
+- **Role:** Monitors browser tab activity, recording the active domain (e.g., `github.com`), the page title, and the session duration.
+- **Mechanism:** It uses Chrome's `chrome.tabs.onActivated` and `chrome.windows.onFocusChanged` APIs to calculate exact usage durations.
 
-This is designed to integrate with the current Meow codebase with minimum rewrite.
+### B. Windows App Tracker (Central Hub)
+- **Location:** `tracker/tracker.js` & `tracker/database.js`
+- **Role:** A Node.js background process that monitors system-level application activity (e.g., VS Code, Spotify) and acts as the central data bridge for the entire ecosystem.
+- **Mechanism:** It polls the OS every 500ms using the `active-win` library to detect the currently focused window and calculates the session duration when the active window changes.
 
----
-
-## 2. Existing Meow Components (Already Present)
-
-Current components and responsibilities:
-
-1. Desktop System Tracker (Node)
-- Captures active window app/title.
-- Exposes local WebSocket endpoint on localhost.
-- Persists sessions locally.
-
-2. Browser Extension
-- Captures domain-level browsing sessions and duration.
-- Syncs session events into the desktop data pipeline.
-
-3. Web Dashboard (Next.js)
-- Visualizes live sessions and reports.
-- Uses categorization logic for Productive, Distracting, Neutral.
-
-4. Electron Shell
-- Desktop packaging option for app delivery.
-
-These remain part of the new architecture.
+### C. Web Dashboard
+- **Location:** `meow_web/`
+- **Role:** A React/Next.js frontend that displays all analytics, charts, and currently active applications.
 
 ---
 
-## 3. Proposed Tech Stack (Integrated with Existing)
+## 2. The Network Link: WebSocket Server & MongoDB
 
-### 3.1 Core language strategy
+The secret to how everything is connected lies in the **Windows App Tracker**. Instead of being a passive script, it runs an active local server:
+1. The **Tracker** hosts a local WebSocket server running on `ws://localhost:5263`.
+2. It also maintains a direct connection to a backend **MongoDB** database (`mongodb+srv://...`) via Mongoose.
 
-- TypeScript end-to-end wherever possible.
-- Keep event schema consistent across desktop, extension, web, mobile, and backend.
-
-### 3.2 Frontend and client surfaces
-
-- Existing: Next.js web dashboard.
-- Existing: Browser extension (Manifest v3 JavaScript/TypeScript style).
-- Existing: Node sidecar tracker.
-- New: React Native mobile companion app.
-  - Android native bridge: Kotlin module for app usage signals.
-  - iOS native bridge: Swift module with best-effort Screen Time style signals.
-
-### 3.3 Backend and APIs
-
-- Node.js API service (Fastify preferred for lightweight performance).
-- Optional WebSocket channel for realtime multi-device dashboard updates.
-- REST endpoints for event ingestion, device registration, and report reads.
-
-### 3.4 Data and processing
-
-- PostgreSQL as primary event store.
-- Prisma ORM for schema management and typed queries.
-- Redis + BullMQ for async pipelines:
-  - classification
-  - aggregation
-  - overlap detection
-  - daily score jobs
-
-### 3.5 Auth and identity
-
-- Supabase Auth (fast MVP) or NextAuth/Auth.js (custom control).
-- Account has multiple devices.
-- Each device has a signed device token.
-
-### 3.6 Observability and deployment
-
-- Docker for local and production parity.
-- Deploy API on Fly.io/Render/Railway for MVP.
-- Sentry for runtime error tracking.
+Both the Browser Extension and the Web Dashboard behave as **clients** to this central WebSocket server.
 
 ---
 
-## 4. Integration Principle
+## 3. Step-by-Step Data Flow (How Data Reaches the Portal)
 
-The integration should be additive, not disruptive:
+### Step 1: Data Generation
+- **From Windows OS (Apps):** Every time you switch an application on your machine, the App Tracker notes the change. If the app was open for more than 1 second, it calls `logSession()` to save this "App Session" directly into MongoDB.
+- **From the Browser (Tabs):** When you switch browser tabs, the Extension calculates the time spent on the previous tab. It then seamlessly sends a WebSocket message formatted as `{ type: 'TAB_LOG', domain, duration, title }` to `ws://localhost:5263`.
 
-- Keep current local-first mode working exactly as now.
-- Add a sync mode that can be enabled per user.
-- When sync is off, no cloud write happens.
-- When sync is on, local tracker and extension also emit normalized events to API.
+### Step 2: Ingestion & Storage
+- When the App Tracker's WebSocket Server receives a `TAB_LOG` message from the Extension, it processes it via `logTab()` and saves this "Tab Session" into the same **MongoDB** database.
+- Both System Apps and Browser Tabs are seamlessly unified into the `Activity` collection in the cloud database, marked respectively with `type: 'app'` or `type: 'tab'`.
 
-This gives Meow two modes:
-- Local-only privacy mode.
-- Cross-device sync mode.
+### Step 3: Pushing to the Dashboard
+- When the **Web Dashboard** is opened, its `useSystemTracker` React hook initiates a WebSocket connection to `ws://localhost:5263`.
+- **Initialization:** The Tracker immediately sends an `init` message, which contains the latest historical stats pulled directly from MongoDB (`getStats()`).
+- **Data Updates:** Every time a new session is saved to MongoDB (either from an app change or a tab switch), the Tracker broadcasts a real-time `stats` payload to all connected dashboard WebSockets.
+- **Live Now View:** Additionally, the Tracker broadcasts an `update` message every 500ms with the OS window changes, allowing the Dashboard to display the *"Currently Active App"* instantly.
 
----
-
-## 5. Unified Event Model
-
-Use one normalized event contract for all sources.
-
-```json
-{
-  "eventId": "uuid",
-  "userId": "uuid",
-  "deviceId": "uuid",
-  "source": "desktop-app|desktop-tab|mobile-app",
-  "name": "code.exe|youtube.com|instagram",
-  "title": "window title or screen context",
-  "category": "productive|distracting|neutral|unknown",
-  "startedAt": "2026-03-31T09:10:00.000Z",
-  "endedAt": "2026-03-31T09:22:00.000Z",
-  "durationSec": 720,
-  "confidence": 0.93,
-  "metadata": {
-    "platform": "windows|android|ios|browser",
-    "appPackage": "com.instagram.android",
-    "domain": "youtube.com"
-  }
-}
-```
-
-Why this matters:
-- Current desktop and browser pipelines can map into this model quickly.
-- Mobile data lands in the same shape.
-- Reporting code can aggregate without source-specific branches.
+### Step 4: Visualizing the Data
+- The React state within `meow_web` receives these WebSockets payloads and automatically updates its state (using `setStats` and `setCurrentApp`).
+- The Frontend Components take these arrays of MongoDB sessions and map them into beautifully styled charts, grids, and analytic modules for you to view.
 
 ---
 
-## 6. End-to-End Working (How Everything Connects)
+## 4. Developer Workflow: Distributing Updates to Random Users
 
-### Step 1: Data capture
+When a developer modifies the internal code (e.g., changing the app to temporarily pause app/tab history pushing to the cloud database), those changes need to be packaged into downloadable release files. This ensures that any random user visiting the web dashboard can download the most recent native components and connect them seamlessly to their session.
 
-- Desktop sidecar captures active app windows.
-- Extension captures domain sessions.
-- Mobile app captures foreground app usage windows.
+Here are the proper steps for compiling and distributing updates:
 
-### Step 2: Local normalization
+### Step 1: Update the Windows App Executable (`meow-app.zip`)
+1. **Compile the Native App:** Run the build command `npm run build-win` from the root project folder. This leverages `electron-builder` to bundle the Node.js tracker, Express/Websocket servers, and Electron wrappers into a standalone Windows executable.
+2. **File Generation:** The raw executable is automatically generated as `Meow 1.0.0.exe` and dumped sequentially inside the `meow_web/public/downloads/` directory.
+3. **Zip and Package:** To allow for safe browser downloading, compress `Meow 1.0.0.exe` into a single zip archive.
+   - **Target File Output:** `meow_web/public/downloads/meow-app.zip`
 
-- Each client converts raw signals into normalized event payloads.
-- Each event is stamped with userId, deviceId, source, timestamps.
+### Step 2: Update the Browser Extension (`meow-extension.zip`)
+1. **Gather Files:** The raw source code of the extension resides in the `meow-extension/` root directory.
+2. **Zip the Extension:** Compress the entire contents of that folder.
+   - **Target File Output:** `meow_web/public/downloads/meow-extension.zip`
 
-### Step 3: Sync and ingestion
+### Step 3: Deploy the Central Web Dashboard
+With `meow-app.zip` and `meow-extension.zip` now cleanly updated natively inside the `meow_web/public/downloads/` directory, the developer deploys the `meow_web` Next.js dashboard to production. 
 
-- Clients push events in batches to ingest API.
-- API validates token, deduplicates eventId, stores raw events.
-
-### Step 4: Classification and enrichment
-
-- Worker classifies unknown activity by rule sets.
-- Shared categorization package applies productive/distracting rules.
-- Confidence score is attached.
-
-### Step 5: Overlap analysis (USP layer)
-
-- Engine finds intervals where:
-  - desktop activity is productive, and
-  - mobile activity is distracting, and
-  - time windows overlap.
-
-- Produces signals like:
-  - split-focus minutes
-  - deep-work interruptions
-  - distraction bursts
-
-### Step 6: Reporting
-
-- Dashboard fetches aggregated daily and weekly metrics.
-- Timeline view shows device source overlays.
-- User sees hidden distraction while coding, not just total screen time.
-
----
-
-## 7. Mermaid Architecture Diagram
-
-```mermaid
-flowchart LR
-    subgraph Desktop[Desktop Environment]
-      T[System Tracker Node]
-      E[Browser Extension]
-      W[Meow Web Dashboard Next.js]
-      DBL[Local Activity Store JSON]
-      T --> DBL
-      E --> W
-      T <--> W
-    end
-
-    subgraph Mobile[Mobile Environment]
-      M[React Native Companion]
-      A[Android Usage Signals]
-      I[iOS Screen Time Signals]
-      A --> M
-      I --> M
-    end
-
-    subgraph Cloud[Sync and Intelligence Layer]
-      API[Ingestion API Fastify]
-      AUTH[Auth and Device Tokens]
-      PG[(PostgreSQL)]
-      R[(Redis)]
-      Q[Worker Queue BullMQ]
-      CLS[Classification Engine]
-      OVR[Overlap Analyzer USP]
-      REP[Report API]
-    end
-
-    T --> API
-    E --> API
-    M --> API
-    AUTH --> API
-    API --> PG
-    API --> R
-    R --> Q
-    Q --> CLS
-    Q --> OVR
-    CLS --> PG
-    OVR --> PG
-    REP --> PG
-    W --> REP
-```
-
-Reading tip:
-- Left side is data producers.
-- Middle is cloud sync and analytics.
-- Rightmost dashboard path is insight consumption.
-
----
-
-## 8. Mermaid Sequence Diagram (Single Session Flow)
-
-```mermaid
-sequenceDiagram
-    participant D as Desktop Tracker
-    participant X as Browser Extension
-    participant M as Mobile Companion
-    participant A as Ingestion API
-    participant P as PostgreSQL
-    participant Q as Queue Worker
-    participant R as Report API
-    participant W as Web Dashboard
-
-    D->>A: Batch desktop app events
-    X->>A: Batch tab events
-    M->>A: Batch mobile app events
-    A->>P: Store normalized events
-    A->>Q: Enqueue classify and overlap jobs
-    Q->>P: Save categories and overlap metrics
-    W->>R: Request daily timeline and score
-    R->>P: Query aggregates and overlap
-    P-->>R: Aggregated metrics
-    R-->>W: Unified cross-device report
-```
-
----
-
-## 9. Focus and Distraction Scoring
-
-Recommended metrics:
-
-1. Productive Minutes
-- Sum of productive intervals across desktop and browser.
-
-2. Distractive Minutes
-- Sum of distractive intervals across all devices.
-
-3. Overlap Distractive Minutes (Key USP)
-- Distractive mobile minutes that overlap productive desktop windows.
-
-4. Focus Purity
-- Formula: 1 - (Overlap Distractive Minutes / Productive Desktop Minutes)
-- If no productive desktop minutes, set to 0 to avoid division instability.
-
-5. Deep Work Interruptions
-- Count of overlap bursts longer than N seconds.
-
----
-
-## 10. Privacy Model
-
-Support two explicit modes:
-
-1. Local-Only Mode
-- Existing behavior.
-- No cloud sync.
-
-2. Sync Mode
-- Cross-device aggregation enabled.
-- Encrypted transport (HTTPS/TLS).
-- Per-device revocable tokens.
-- Optional redaction rules for sensitive titles.
-
-This maintains trust while enabling the new USP.
-
----
-
-## 11. Platform Constraints and Practical Scope
-
-- Android: richer app-level tracking is practical with user-granted permissions.
-- iOS: stricter privacy controls; implement best-effort signals and clear user communication.
-
-Recommendation:
-- Launch full cross-device beta with Android first.
-- Add iOS with transparent capability boundaries.
-
----
-
-## 12. Migration Plan from Current Codebase
-
-Phase 1:
-- Extract shared categorization logic into a reusable package.
-- Add normalized event contract in tracker and extension.
-
-Phase 2:
-- Build ingestion API + database schema.
-- Add optional sync toggle in dashboard settings.
-
-Phase 3:
-- Release Android companion and device linking.
-- Implement overlap analyzer and new report cards.
-
-Phase 4:
-- Harden privacy controls, retries, offline buffering, observability.
-- Expand iOS capabilities where allowed.
-
----
-
-## 13. Why This Becomes a Real USP for Meow
-
-Most trackers answer "How long did you use device X?"
-
-Meow can answer "When you were doing productive work, what distracted you from another device at the same time?"
-
-That difference is strategic because it measures attention fragmentation, not just screen time.
+When a new, random user visits the site, they can click "Download Desktop App" and "Download Extension". The `meow_web` server will successfully serve these newly minted binaries—guaranteeing their local system successfully syncs with the updated cloud!
