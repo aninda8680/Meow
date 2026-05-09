@@ -144,7 +144,7 @@ export function TaskModal({ isOpen, onClose, tasks, onUpdateTasks }: TaskModalPr
                                                     animate={{ opacity: 1, x: 0 }}
                                                     exit={{ opacity: 0, scale: 0.95 }}
                                                     transition={{ delay: idx * 0.05 }}
-                                                    className="group flex items-center gap-6 p-6 rounded-4xl bg-foreground/3 border border-transparent hover:border-foreground/10 hover:bg-foreground/5 transition-all"
+                                                    className="group relative flex items-center gap-6 p-6 rounded-4xl bg-foreground/3 border border-transparent hover:border-foreground/10 hover:bg-foreground/5 transition-all"
                                                 >
                                                     <button
                                                         onClick={() => toggleComplete(task.id)}
@@ -161,7 +161,7 @@ export function TaskModal({ isOpen, onClose, tasks, onUpdateTasks }: TaskModalPr
                                                         )}
                                                     </button>
 
-                                                    <div className="flex-1 min-w-0">
+                                                    <div className="flex-1 min-w-0 pr-10">
                                                         <h4 className={`text-xl font-bold truncate transition-all ${task.completed ? "opacity-20 line-through" : "opacity-80"}`}>
                                                             {task.title}
                                                         </h4>
@@ -178,7 +178,7 @@ export function TaskModal({ isOpen, onClose, tasks, onUpdateTasks }: TaskModalPr
 
                                                     <button
                                                         onClick={() => deleteTask(task.id)}
-                                                        className="p-3 opacity-0 group-hover:opacity-20 hover:opacity-100! hover:bg-red-500/10 hover:text-red-500 rounded-2xl transition-all"
+                                                        className="absolute top-4 right-4 p-3 opacity-0 group-hover:opacity-20 hover:opacity-100! hover:bg-red-500/10 hover:text-red-500 rounded-2xl transition-all"
                                                     >
                                                         <Trash2 className="w-5 h-5" />
                                                     </button>

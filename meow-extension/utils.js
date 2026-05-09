@@ -27,7 +27,7 @@ export function shouldIgnore(url) {
   }
 
   // Ignore Meow itself
-  if (url.includes("hi-meow.vercel.app") || url.includes("localhost:3000") || url.includes("localhost:5173")) {
+  if (url.includes("hi-meow.vercel.app") || url.includes("localhost:3000") || url.includes("localhost:3001") || url.includes("localhost:3002") || url.includes("localhost:5173")) {
     return true;
   }
 

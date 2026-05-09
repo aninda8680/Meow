@@ -1,6 +1,8 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
+
+// ── Types ─────────────────────────────────────────────────────────────────────
 
 export interface ActivityData {
     app?: string;
@@ -12,23 +14,35 @@ export interface ActivityData {
     type: 'app' | 'tab';
 }
 
+// FIX #3: appTotals and tabTotals are now separate — no more mixed namespace
 export interface ActivityStats {
     sessions: ActivityData[];
-    totals: Record<string, { totalDuration: number; visits: number }>;
+    appTotals: Record<string, { totalDuration: number; visits: number }>;
+    tabTotals: Record<string, { totalDuration: number; visits: number }>;
 }
+
+// ── Module-level shared state (singleton across all hook instances) ────────────
 
 let globalSocket: WebSocket | null = null;
 let globalStatus: 'connecting' | 'connected' | 'error' = 'connecting';
-let globalCurrentApp: { app: string; title: string } | null = null;
-let globalStats: ActivityStats = { sessions: [], totals: {} };
-const listeners = new Set<() => void>();
+let globalCurrentApp: { app: string; title: string; startTime: number } | null = null;
+let globalStats: ActivityStats = { sessions: [], appTotals: {}, tabTotals: {} };
 
+// FIX #2: Module-level persistent set — survives component unmount/remount/page navigation
+// This is the single source of truth for "already synced to backend" tab session IDs
+export const globalSyncedTabIds = new Set<number>();
+
+const listeners = new Set<() => void>();
 let reconnectTimeout: NodeJS.Timeout | null = null;
 let isConnecting = false;
+
+// ── Helpers ───────────────────────────────────────────────────────────────────
 
 function notifyListeners() {
     listeners.forEach(listener => listener());
 }
+
+// ── WebSocket singleton ───────────────────────────────────────────────────────
 
 function initGlobalSocket() {
     if (globalSocket || isConnecting) return;
@@ -47,21 +61,31 @@ function initGlobalSocket() {
     globalSocket.onmessage = (event) => {
         try {
             const data = JSON.parse(event.data);
+
             if (data.type === 'init' || data.type === 'stats') {
+                // FIX #3: Backend now sends appTotals / tabTotals separately
                 globalStats = {
                     sessions: data.data?.sessions || [],
-                    totals: data.data?.totals || {}
+                    appTotals: data.data?.appTotals || {},
+                    tabTotals: data.data?.tabTotals || {},
                 };
             } else if (data.type === 'update') {
-                globalCurrentApp = { app: data.app, title: data.title };
+                // FIX #8: Track the session start time for live current-app duration
+                const isSameApp = globalCurrentApp?.app === data.app;
+                globalCurrentApp = {
+                    app: data.app,
+                    title: data.title,
+                    startTime: isSameApp ? (globalCurrentApp?.startTime ?? Date.now()) : Date.now(),
+                };
             }
+
             notifyListeners();
         } catch (e) {
             console.error("❌ Failed to parse tracker message:", e);
         }
     };
 
-    globalSocket.onerror = (error) => {
+    globalSocket.onerror = () => {
         console.warn("⚠️ Tracker connection error. Is the backend running?");
         globalStatus = 'error';
         notifyListeners();
@@ -73,7 +97,7 @@ function initGlobalSocket() {
         globalSocket = null;
         console.log("🔌 Tracker disconnected. Retrying in 5s...");
         notifyListeners();
-        
+
         if (!reconnectTimeout) {
             reconnectTimeout = setTimeout(() => {
                 reconnectTimeout = null;
@@ -83,13 +107,19 @@ function initGlobalSocket() {
     };
 }
 
+// ── Hook ──────────────────────────────────────────────────────────────────────
+
 export function useSystemTracker() {
     const [, forceRender] = useState({});
+
+    // FIX #8: Live timer for current app's in-progress session duration
+    const [liveCurrentDuration, setLiveCurrentDuration] = useState(0);
+    const liveTimerRef = useRef<NodeJS.Timeout | null>(null);
 
     useEffect(() => {
         const listener = () => forceRender({});
         listeners.add(listener);
-        
+
         if (!globalSocket && !isConnecting) {
             initGlobalSocket();
         }
@@ -98,6 +128,25 @@ export function useSystemTracker() {
             listeners.delete(listener);
         };
     }, []);
+
+    // FIX #8: Tick a live counter for the current app's unfinished session
+    useEffect(() => {
+        if (liveTimerRef.current) clearInterval(liveTimerRef.current);
+
+        if (globalCurrentApp) {
+            liveTimerRef.current = setInterval(() => {
+                setLiveCurrentDuration(
+                    Math.floor((Date.now() - globalCurrentApp!.startTime) / 1000)
+                );
+            }, 1000);
+        } else {
+            setLiveCurrentDuration(0);
+        }
+
+        return () => {
+            if (liveTimerRef.current) clearInterval(liveTimerRef.current);
+        };
+    }, [globalCurrentApp?.app]); // restart timer when app changes
 
     const logTabActivity = useCallback((domain: string, title: string, duration: number, id?: number) => {
         if (globalSocket && globalSocket.readyState === WebSocket.OPEN) {
@@ -114,14 +163,17 @@ export function useSystemTracker() {
     const clearData = useCallback(() => {
         if (globalSocket && globalSocket.readyState === WebSocket.OPEN) {
             globalSocket.send(JSON.stringify({ type: 'CLEAR_DATA' }));
+            // Also clear the synced IDs set so sessions can be re-synced after a clear
+            globalSyncedTabIds.clear();
         }
     }, []);
 
-    return { 
-        status: globalStatus, 
-        currentApp: globalCurrentApp, 
-        stats: globalStats, 
-        logTabActivity, 
-        clearData 
+    return {
+        status: globalStatus,
+        currentApp: globalCurrentApp,
+        liveCurrentDuration, // FIX #8: seconds spent in current app since last focus change
+        stats: globalStats,
+        logTabActivity,
+        clearData,
     };
 }

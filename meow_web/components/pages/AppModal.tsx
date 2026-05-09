@@ -3,7 +3,7 @@
 import * as React from "react";
 import { createPortal } from "react-dom";
 import { motion, AnimatePresence } from "framer-motion";
-import { X, Clock, BarChart3, Search, Activity, Box, ExternalLink } from "lucide-react";
+import { X, Clock, BarChart3, Search, Box } from "lucide-react";
 import { useSystemTracker } from "@/hooks/useSystemTracker";
 
 interface AppModalProps {
@@ -24,28 +24,30 @@ export function AppModal({ isOpen, onClose }: AppModalProps) {
         const hrs = Math.floor(seconds / 3600);
         const mins = Math.floor((seconds % 3600) / 60);
         const secs = seconds % 60;
-
         if (hrs > 0) return `${hrs}h ${mins}m`;
         if (mins > 0) return `${mins}m ${secs}s`;
         return `${secs}s`;
     };
 
-    const appTotals = Object.entries(stats?.totals || {})
-        .filter(([key]) => {
-            // Filter for apps (heuristic: doesn't look like domain and not a website session)
-            const isDomain = key.includes('.') && key.split('.').pop()!.length >= 2;
-            return !isDomain;
-        })
+    // FIX #3: Use stats.appTotals directly — no heuristics needed
+    const appTotals = Object.entries(stats?.appTotals || {})
         .filter(([app]) => app.toLowerCase().includes(searchQuery.toLowerCase()))
         .sort((a, b) => b[1].totalDuration - a[1].totalDuration);
 
+    // FIX #12: Calculate max duration for relative progress bar widths
+    const maxAppDuration = appTotals[0]?.[1].totalDuration || 1;
+
     const recentApps = stats.sessions
         .filter(s => s.type === 'app')
-        .filter(s => s.app?.toLowerCase().includes(searchQuery.toLowerCase()) || s.title.toLowerCase().includes(searchQuery.toLowerCase()))
-        .reverse();
+        .filter(s =>
+            s.app?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+            s.title.toLowerCase().includes(searchQuery.toLowerCase())
+        );
+    // Sessions are already newest-first from getStats()
 
     const aggregateStats = {
         totalApps: appTotals.length,
+        // FIX #6: totalTime from appTotals only
         totalTime: appTotals.reduce((acc, curr) => acc + curr[1].totalDuration, 0),
         mostUsed: appTotals[0]?.[0] || "None"
     };
@@ -63,7 +65,7 @@ export function AppModal({ isOpen, onClose }: AppModalProps) {
                     className="fixed inset-0 w-screen h-screen bg-background z-1000 flex flex-col overflow-hidden"
                     style={{ fontFamily: 'var(--font-malinton)' }}
                 >
-                    {/* Header Overlay */}
+                    {/* Header */}
                     <div className="flex justify-between items-center px-10 py-8 shrink-0">
                         <div className="flex items-center gap-4">
                             <div className="p-3 bg-foreground/5 rounded-2xl">
@@ -97,7 +99,7 @@ export function AppModal({ isOpen, onClose }: AppModalProps) {
                                     transition={{ delay: 0.1 + i * 0.1 }}
                                     className="p-8 rounded-[40px] bg-foreground/3 border border-foreground/5 flex flex-col gap-4 relative overflow-hidden group hover:bg-foreground/5 transition-all"
                                 >
-                                    <stat.icon className={`w-12 h-12 opacity-5 absolute -right-4 -bottom-4 rotate-12 group-hover:scale-125 transition-transform`} />
+                                    <stat.icon className="w-12 h-12 opacity-5 absolute -right-4 -bottom-4 rotate-12 group-hover:scale-125 transition-transform" />
                                     <span className="text-[11px] font-black uppercase tracking-[0.2em] opacity-40">{stat.label}</span>
                                     <p className="text-3xl font-black tracking-tighter truncate">{stat.value}</p>
                                 </motion.div>
@@ -144,16 +146,19 @@ export function AppModal({ isOpen, onClose }: AppModalProps) {
                                                     </div>
                                                     <div>
                                                         <h4 className="text-lg font-bold opacity-80">{app}</h4>
-                                                        <p className="text-[10px] uppercase font-black opacity-20 tracking-widest">{data.visits} recorded focus sessions</p>
+                                                        <p className="text-[10px] uppercase font-black opacity-20 tracking-widest">
+                                                            {data.visits} recorded focus sessions
+                                                        </p>
                                                     </div>
                                                 </div>
                                                 <div className="text-right">
                                                     <p className="text-xl font-black tracking-tight">{formatDuration(data.totalDuration)}</p>
+                                                    {/* FIX #12: Relative bar width based on top app's duration */}
                                                     <div className="w-32 h-1 bg-foreground/5 rounded-full mt-2 overflow-hidden">
-                                                        <motion.div 
+                                                        <motion.div
                                                             initial={{ width: 0 }}
-                                                            animate={{ width: "100%" }}
-                                                            className="h-full bg-purple-500 opacity-40"
+                                                            animate={{ width: `${(data.totalDuration / maxAppDuration) * 100}%` }}
+                                                            className="h-full bg-purple-500 opacity-60"
                                                         />
                                                     </div>
                                                 </div>
@@ -175,7 +180,7 @@ export function AppModal({ isOpen, onClose }: AppModalProps) {
                                                     <span className="text-[10px] font-black text-purple-500/60 uppercase tracking-widest">{session.app}</span>
                                                     <span className="text-[9px] opacity-30 font-mono">{formatDuration(session.duration)}</span>
                                                 </div>
-                                                <h5 className="text-xs font-bold leading-relaxed line-clamp-2 opacity-70 group-hover:opacity-100 transition-opacity">
+                                                <h5 className="text-xs font-bold leading-relaxed line-clamp-2 opacity-70">
                                                     {session.title}
                                                 </h5>
                                                 <p className="text-[8px] opacity-20 font-medium">
@@ -189,19 +194,15 @@ export function AppModal({ isOpen, onClose }: AppModalProps) {
                         </div>
                     </div>
 
-                    {/* Background Subtle Elements */}
+                    {/* Background accents */}
                     <div className="absolute inset-0 -z-10 overflow-hidden pointer-events-none">
                         <div className="absolute top-[-10%] right-[-10%] w-[50%] h-[50%] bg-purple-500/5 rounded-full blur-[120px]" />
                         <div className="absolute bottom-[-10%] left-[-10%] w-[50%] h-[50%] bg-blue-500/5 rounded-full blur-[120px]" />
                     </div>
 
                     <style jsx>{`
-                        .custom-scrollbar::-webkit-scrollbar {
-                            width: 4px;
-                        }
-                        .custom-scrollbar::-webkit-scrollbar-track {
-                            background: transparent;
-                        }
+                        .custom-scrollbar::-webkit-scrollbar { width: 4px; }
+                        .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
                         .custom-scrollbar::-webkit-scrollbar-thumb {
                             background: rgba(var(--foreground-rgb), 0.1);
                             border-radius: 10px;

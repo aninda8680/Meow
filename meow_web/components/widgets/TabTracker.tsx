@@ -1,9 +1,9 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import { motion } from "framer-motion";
-import { Clock, History, Maximize2 } from "lucide-react";
-import { useSystemTracker } from "@/hooks/useSystemTracker";
+import { History, Maximize2 } from "lucide-react";
+import { useSystemTracker, globalSyncedTabIds } from "@/hooks/useSystemTracker";
 import { TabModal } from "../pages/TabModal";
 
 interface TabTrackerProps {
@@ -14,34 +14,34 @@ export default function TabTracker({ className }: TabTrackerProps) {
   const { logTabActivity, stats, status } = useSystemTracker();
   const [extensionInstalled, setExtensionInstalled] = useState(false);
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const syncedLocally = useRef(new Set<number>());
 
-  // Fetch data from extension
+  // FIX #4: logTabActivity is stable (useCallback with no deps), so this effect
+  // only mounts once and never tears down / re-registers on stat updates.
+  // FIX #2: Uses module-level globalSyncedTabIds instead of a component useRef,
+  // so the set persists across unmounts, remounts, and page navigations.
   useEffect(() => {
     const requestData = () => {
       window.postMessage({ type: "MEOW_GET_DATA" }, "*");
     };
 
-    // Request immediately and then every 1 second to sync new sessions
     requestData();
     const interval = setInterval(requestData, 1000);
 
     const handler = (event: MessageEvent) => {
-      if (event.data.type === "MEOW_DATA_RESPONSE") {
-        setExtensionInstalled(true);
-        const sessions = event.data.payload.sessions || [];
+      if (event.data?.type !== "MEOW_DATA_RESPONSE") return;
 
-        // Get already tracked IDs from stats
-        const trackedIds = new Set(stats.sessions.filter(s => s.type === 'tab').map(s => s.id));
+      console.log("📤 Dashboard received data from Extension");
+      setExtensionInstalled(true);
+      const sessions: Array<{ id: number; domain: string; title: string; duration: number }> =
+        event.data.payload?.sessions || [];
 
-        // Only log new sessions that haven't been tracked yet
-        sessions.forEach((s: any) => {
-          if (!trackedIds.has(s.id) && !syncedLocally.current.has(s.id)) {
-            syncedLocally.current.add(s.id);
-            logTabActivity(s.domain, s.title, s.duration, s.id);
-          }
-        });
-      }
+      sessions.forEach((s) => {
+        // FIX #2: globalSyncedTabIds is module-level — never resets on re-render/remount
+        if (!globalSyncedTabIds.has(s.id)) {
+          globalSyncedTabIds.add(s.id);
+          logTabActivity(s.domain, s.title, s.duration, s.id);
+        }
+      });
     };
 
     window.addEventListener("message", handler);
@@ -50,7 +50,7 @@ export default function TabTracker({ className }: TabTrackerProps) {
       window.removeEventListener("message", handler);
       clearInterval(interval);
     };
-  }, [logTabActivity, stats.sessions]);
+  }, [logTabActivity]); // stable dep — effect never re-registers due to stat changes
 
   const formatDuration = (seconds: number) => {
     if (seconds < 60) return `${seconds}s`;
@@ -59,28 +59,20 @@ export default function TabTracker({ className }: TabTrackerProps) {
     return `${mins}m ${secs}s`;
   };
 
-  // Filter for tabs in the unified stats - Limit to 2 for the widget view
+  // FIX #3 + #5: Use stats.tabTotals directly (no heuristics needed).
+  // getStats() sorts sessions newest-first, so .slice(0, N) gives the most recent.
   const recentTabs = stats.sessions
     .filter(s => s.type === 'tab')
-    .slice(-2)
-    .reverse();
+    .slice(0, 2); // newest-first from backend — correct order
 
-  const tabTotals = Object.entries(stats.totals)
-    .filter(([key]) => {
-      // Improved heuristic for domains vs apps
-      const isApp = key.toLowerCase().endsWith('.exe') || key.includes(' ');
-      const hasDomainPattern = key.includes('.') && key.split('.').pop()!.length >= 2;
-      return hasDomainPattern && !isApp;
-    })
+  const tabTotals = Object.entries(stats.tabTotals)
     .sort((a, b) => b[1].totalDuration - a[1].totalDuration)
     .slice(0, 2);
 
   return (
     <>
-      <motion.div
-        initial={{ opacity: 0, scale: 0.9 }}
-        animate={{ opacity: 1, scale: 1 }}
-        className={`w-full md:w-72 bg-foreground/4 border border-foreground/15 backdrop-blur-xl rounded-4xl p-6 flex flex-col gap-6 group transition-all shadow-2xl hover:border-foreground/30 ${className}`}
+      <div
+        className={`w-full bg-foreground/4 border border-foreground/15 backdrop-blur-xl rounded-4xl p-6 flex flex-col gap-6 group transition-all shadow-2xl hover:border-foreground/30 ${className}`}
         style={{ fontFamily: 'var(--font-malinton)' }}
       >
         <div className="flex items-center justify-between">
@@ -116,7 +108,7 @@ export default function TabTracker({ className }: TabTrackerProps) {
           <div className="flex flex-col gap-2">
             {recentTabs.map((session, idx) => (
               <div
-                key={idx}
+                key={session.id ?? idx}
                 className="p-3 rounded-xl bg-foreground/5"
               >
                 <div className="flex justify-between text-[10px] opacity-50 mb-1">
@@ -133,11 +125,11 @@ export default function TabTracker({ className }: TabTrackerProps) {
             )}
           </div>
         </div>
-      </motion.div>
+      </div>
 
-      <TabModal 
-        isOpen={isModalOpen} 
-        onClose={() => setIsModalOpen(false)} 
+      <TabModal
+        isOpen={isModalOpen}
+        onClose={() => setIsModalOpen(false)}
       />
     </>
   );

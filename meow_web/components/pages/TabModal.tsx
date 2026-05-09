@@ -3,7 +3,7 @@
 import * as React from "react";
 import { createPortal } from "react-dom";
 import { motion, AnimatePresence } from "framer-motion";
-import { X, Clock, History, Search, BarChart3, Network, ExternalLink } from "lucide-react";
+import { X, Clock, Search, BarChart3, Network } from "lucide-react";
 import { useSystemTracker } from "@/hooks/useSystemTracker";
 
 interface TabModalProps {
@@ -24,31 +24,31 @@ export function TabModal({ isOpen, onClose }: TabModalProps) {
         const hrs = Math.floor(seconds / 3600);
         const mins = Math.floor((seconds % 3600) / 60);
         const secs = seconds % 60;
-
         if (hrs > 0) return `${hrs}h ${mins}m`;
         if (mins > 0) return `${mins}m ${secs}s`;
         return `${secs}s`;
     };
 
-    const tabTotals = Object.entries(stats.totals)
-        .filter(([key]) => {
-            // Improved heuristic for domains vs apps
-            const isApp = key.toLowerCase().endsWith('.exe') || key.includes(' ');
-            const hasDomainPattern = key.includes('.') && key.split('.').pop()!.length >= 2;
-            return hasDomainPattern && !isApp;
-        })
+    // FIX #3 & #7: Use stats.tabTotals directly — no heuristics, no index-alignment tricks
+    const tabTotals = Object.entries(stats.tabTotals || {})
         .filter(([domain]) => domain.toLowerCase().includes(searchQuery.toLowerCase()))
         .sort((a, b) => b[1].totalDuration - a[1].totalDuration);
 
+    // FIX #12: Calculate max duration for relative progress bar widths
+    const maxTabDuration = tabTotals[0]?.[1].totalDuration || 1;
+
     const recentTabs = stats.sessions
         .filter(s => s.type === 'tab')
-        .filter(s => s.domain?.toLowerCase().includes(searchQuery.toLowerCase()) || s.title.toLowerCase().includes(searchQuery.toLowerCase()))
-        .reverse();
+        .filter(s =>
+            s.domain?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+            s.title.toLowerCase().includes(searchQuery.toLowerCase())
+        );
+    // Sessions are already newest-first from getStats()
 
+    // FIX #7: Clean aggregate stats — derived directly from tabTotals, no fragile index-trick
     const aggregateStats = {
-        totalSites: Object.keys(stats.totals).filter(k => k.includes('.')).length,
-        totalTime: Object.values(stats.totals)
-            .filter((_, i) => Object.keys(stats.totals)[i].includes('.'))
+        totalSites: Object.keys(stats.tabTotals || {}).length,
+        totalTime: Object.values(stats.tabTotals || {})
             .reduce((acc, curr) => acc + curr.totalDuration, 0),
         mostVisited: tabTotals[0]?.[0] || "None"
     };
@@ -66,7 +66,7 @@ export function TabModal({ isOpen, onClose }: TabModalProps) {
                     className="fixed inset-0 w-screen h-screen bg-background z-1000 flex flex-col overflow-hidden"
                     style={{ fontFamily: 'var(--font-malinton)' }}
                 >
-                    {/* Header Overlay */}
+                    {/* Header */}
                     <div className="flex justify-between items-center px-10 py-8 shrink-0">
                         <div className="flex items-center gap-4">
                             <div className="p-3 bg-foreground/5 rounded-2xl">
@@ -100,7 +100,7 @@ export function TabModal({ isOpen, onClose }: TabModalProps) {
                                     transition={{ delay: 0.1 + i * 0.1 }}
                                     className="p-8 rounded-[40px] bg-foreground/3 border border-foreground/5 flex flex-col gap-4 relative overflow-hidden group hover:bg-foreground/5 transition-all"
                                 >
-                                    <stat.icon className={`w-12 h-12 opacity-5 absolute -right-4 -bottom-4 rotate-12 group-hover:scale-125 transition-transform`} />
+                                    <stat.icon className="w-12 h-12 opacity-5 absolute -right-4 -bottom-4 rotate-12 group-hover:scale-125 transition-transform" />
                                     <span className="text-[11px] font-black uppercase tracking-[0.2em] opacity-40">{stat.label}</span>
                                     <p className="text-3xl font-black tracking-tighter truncate">{stat.value}</p>
                                 </motion.div>
@@ -147,16 +147,19 @@ export function TabModal({ isOpen, onClose }: TabModalProps) {
                                                     </div>
                                                     <div>
                                                         <h4 className="text-lg font-bold opacity-80">{domain}</h4>
-                                                        <p className="text-[10px] uppercase font-black opacity-20 tracking-widest">{data.visits} recorded sessions</p>
+                                                        <p className="text-[10px] uppercase font-black opacity-20 tracking-widest">
+                                                            {data.visits} recorded sessions
+                                                        </p>
                                                     </div>
                                                 </div>
                                                 <div className="text-right">
                                                     <p className="text-xl font-black tracking-tight">{formatDuration(data.totalDuration)}</p>
+                                                    {/* FIX #12: Relative bar width based on top domain's duration */}
                                                     <div className="w-32 h-1 bg-foreground/5 rounded-full mt-2 overflow-hidden">
-                                                        <motion.div 
+                                                        <motion.div
                                                             initial={{ width: 0 }}
-                                                            animate={{ width: "100%" }}
-                                                            className="h-full bg-blue-500 opacity-40"
+                                                            animate={{ width: `${(data.totalDuration / maxTabDuration) * 100}%` }}
+                                                            className="h-full bg-blue-500 opacity-60"
                                                         />
                                                     </div>
                                                 </div>
@@ -178,7 +181,7 @@ export function TabModal({ isOpen, onClose }: TabModalProps) {
                                                     <span className="text-[10px] font-black text-blue-500/60 uppercase tracking-widest">{tab.domain}</span>
                                                     <span className="text-[9px] opacity-30 font-mono">{formatDuration(tab.duration)}</span>
                                                 </div>
-                                                <h5 className="text-xs font-bold leading-relaxed line-clamp-2 opacity-70 group-hover:opacity-100 transition-opacity">
+                                                <h5 className="text-xs font-bold leading-relaxed line-clamp-2 opacity-70">
                                                     {tab.title}
                                                 </h5>
                                                 <p className="text-[8px] opacity-20 font-medium">
@@ -192,19 +195,15 @@ export function TabModal({ isOpen, onClose }: TabModalProps) {
                         </div>
                     </div>
 
-                    {/* Background Subtle Elements */}
+                    {/* Background accents */}
                     <div className="absolute inset-0 -z-10 overflow-hidden pointer-events-none">
                         <div className="absolute top-[-10%] right-[-10%] w-[50%] h-[50%] bg-blue-500/5 rounded-full blur-[120px]" />
                         <div className="absolute bottom-[-10%] left-[-10%] w-[50%] h-[50%] bg-emerald-500/5 rounded-full blur-[120px]" />
                     </div>
 
                     <style jsx>{`
-                        .custom-scrollbar::-webkit-scrollbar {
-                            width: 4px;
-                        }
-                        .custom-scrollbar::-webkit-scrollbar-track {
-                            background: transparent;
-                        }
+                        .custom-scrollbar::-webkit-scrollbar { width: 4px; }
+                        .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
                         .custom-scrollbar::-webkit-scrollbar-thumb {
                             background: rgba(var(--foreground-rgb), 0.1);
                             border-radius: 10px;

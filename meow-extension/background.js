@@ -6,6 +6,12 @@ import {
   createEmptyDay
 } from "./utils.js";
 
+// FIX #11: Use a session counter alongside timestamp to prevent ID collisions
+let sessionCounter = 0;
+function generateSessionId() {
+  return Date.now() * 10000 + (++sessionCounter % 10000);
+}
+
 const BACKEND_URL = "ws://localhost:5263";
 let socket = null;
 
@@ -23,17 +29,9 @@ function connectBackend() {
 
 connectBackend();
 
-function syncToBackend(tab, duration, id) {
-  if (socket && socket.readyState === WebSocket.OPEN) {
-    socket.send(JSON.stringify({
-      type: 'TAB_LOG',
-      domain: getDomain(tab.url),
-      title: tab.title,
-      duration: duration,
-      id: id
-    }));
-  }
-}
+// FIX #1: REMOVED syncToBackend() — tab data now flows exclusively through
+// the chrome.storage.local → content.js → TabTracker.tsx → logTabActivity() path.
+// This eliminates the dual-path double-logging issue.
 
 let currentTab = null;
 let startTime = null;
@@ -48,12 +46,12 @@ function saveSession(tab, endTime) {
   if (!domain) return;
 
   const today = getTodayKey();
-  const id = Date.now(); // Generate ID once
+  const id = generateSessionId(); // collision-safe unique ID
 
   chrome.storage.local.get([today], (result) => {
     const dayData = result[today] || createEmptyDay();
 
-    // Raw session
+    // Store raw session for the bridge
     dayData.sessions.push({
       id,
       title: tab.title,
@@ -64,7 +62,7 @@ function saveSession(tab, endTime) {
       duration
     });
 
-    // Aggregation
+    // Local aggregation (used by the extension only, not sent to backend)
     if (!dayData.totals[domain]) {
       dayData.totals[domain] = {
         title: tab.title,
@@ -72,14 +70,13 @@ function saveSession(tab, endTime) {
         visits: 0
       };
     }
-
     dayData.totals[domain].totalDuration += duration;
     dayData.totals[domain].visits += 1;
 
     chrome.storage.local.set({ [today]: dayData });
 
-    // 🚀 NEW: Sync directly to backend for instant reflection
-    syncToBackend(tab, duration, id);
+    // NOTE: No syncToBackend() here — TabTracker.tsx handles syncing
+    // via the content.js postMessage bridge to avoid double-logging.
   });
 }
 
@@ -87,14 +84,14 @@ function handleTabChange(activeInfo) {
   chrome.tabs.get(activeInfo.tabId, (tab) => {
     const now = Date.now();
 
-    // 1. Always try to save the PREVIOUS session first
+    // 1. Always save the previous session first
     if (currentTab) {
       saveSession(currentTab, now);
       currentTab = null;
       startTime = null;
     }
 
-    // 2. Now check if we should track the NEW tab
+    // 2. Track the new tab if not ignored
     if (shouldIgnore(tab?.url)) return;
 
     currentTab = tab;
@@ -106,14 +103,14 @@ chrome.tabs.onActivated.addListener(handleTabChange);
 
 chrome.windows.onFocusChanged.addListener((windowId) => {
   if (windowId === chrome.windows.WINDOW_ID_NONE) {
-    // Lost focus - save the current session
+    // Lost focus — save current session
     if (currentTab) {
       saveSession(currentTab, Date.now());
       currentTab = null;
       startTime = null;
     }
   } else {
-    // Gained focus - check the active tab in this window
+    // Gained focus — pick up active tab in this window
     chrome.tabs.query({ active: true, windowId }, (tabs) => {
       if (tabs[0]) {
         handleTabChange({ tabId: tabs[0].id });

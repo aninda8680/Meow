@@ -117,10 +117,8 @@ export default function TaskSection({ activeTaskId, onSetActiveTask, className }
 
     return (
         <>
-            <motion.div
-                initial={{ opacity: 0, scale: 0.9 }}
-                animate={{ opacity: 1, scale: 1 }}
-                className={`w-full md:w-72 h-50 bg-foreground/4 border border-foreground/15 backdrop-blur-xl rounded-4xl p-6 flex flex-col gap-6 group/box hover:border-foreground/30 transition-all shadow-2xl shadow-black/10 ${className}`}
+            <div
+                className={`w-full max-h-[60vh] bg-foreground/4 border border-foreground/15 backdrop-blur-xl rounded-4xl p-6 flex flex-col gap-6 group/box hover:border-foreground/30 transition-all shadow-2xl shadow-black/10 ${className}`}
                 style={{ fontFamily: 'var(--font-malinton)' }}
             >
                 <div className="flex justify-between items-center pr-2 shrink-0">
@@ -225,7 +223,7 @@ export default function TaskSection({ activeTaskId, onSetActiveTask, className }
               border-radius: 10px;
             }
           `}</style>
-            </motion.div>
+            </div>
 
             <TaskModal
                 isOpen={isSettingsOpen}

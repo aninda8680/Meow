@@ -9,8 +9,10 @@ import TaskSection from "@/components/widgets/TaskSection";
 import AppTracker from "@/components/widgets/AppTracker";
 import TabTracker from "@/components/widgets/TabTracker";
 import { ReportWidget } from "@/components/widgets/ReportWidget";
-import { BackgroundBeamsWithCollision } from "@/components/ui/background-beams-with-collision";
-import { LogOut, LayoutGrid, EyeOff } from "lucide-react";
+
+import QuickNotes from "@/components/widgets/QuickNotes";
+import EdgeWidget from "@/components/EdgeWidget";
+import { LogOut, LayoutGrid, EyeOff, Monitor, StickyNote, Globe, Target } from "lucide-react";
 import { useSession, signOut } from "next-auth/react";
 import CompletionToast from "@/components/CompletionToast";
 
@@ -26,10 +28,11 @@ export default function Home() {
   const [showCompletion, setShowCompletion] = useState(false);
   const [lastSessionTime, setLastSessionTime] = useState(0);
   const [widgets, setWidgets] = useState({
-    tasks: true,
-    activity: true,
-    rain: true,
+    appTracker: true,
     tabHistory: true,
+    quickNotes: true,
+    focusReport: true,
+    tasks: true,
   });
 
   // Load user settings from API
@@ -40,7 +43,16 @@ export default function Home() {
         const data = await res.json();
         setUserInfo({ name: data.name || session?.user?.name || "", avatar: data.avatar || "users-1.svg" });
         setMode(data.mode || "countup");
-        setWidgets(prev => ({ ...prev, ...data.widgets }));
+        if (data.widgets) {
+          // Migrate old 'activity' toggle to new split toggles
+          const w = { ...data.widgets };
+          if ('activity' in w && !('appTracker' in w)) {
+            w.appTracker = w.activity;
+            w.focusReport = w.activity;
+            delete w.activity;
+          }
+          setWidgets(prev => ({ ...prev, ...w }));
+        }
       }
     } catch (e) {
       console.error("Failed to load settings", e);
@@ -73,14 +85,14 @@ export default function Home() {
   }, [mode, widgets, session]);
 
   const toggleAllWidgets = () => {
-    // Check if any widget is on. If so, turn them all off. Otherwise, turn them all on.
-    const anyOn = widgets.tasks || widgets.activity || widgets.rain || widgets.tabHistory;
+    const anyOn = widgets.tasks || widgets.appTracker || widgets.tabHistory || widgets.quickNotes || widgets.focusReport;
     const newState = !anyOn;
     setWidgets({
       tasks: newState,
-      activity: newState,
-      rain: newState,
+      appTracker: newState,
       tabHistory: newState,
+      quickNotes: newState,
+      focusReport: newState,
     });
   };
 
@@ -109,43 +121,99 @@ export default function Home() {
     await signOut({ callbackUrl: '/' });
   };
 
-  const Component = widgets.rain ? BackgroundBeamsWithCollision : "div";
-
   return (
-    <Component className={widgets.rain ? "min-h-screen" : "relative min-h-screen bg-background text-foreground overflow-x-hidden transition-colors duration-500"}>
+    <div className="relative min-h-screen bg-background text-foreground overflow-x-hidden transition-colors duration-500">
 
-      {/* Navbar (Top Right) */}
-      <div className="fixed top-6 right-6 z-50 flex items-center gap-3">
-        <button
-          onClick={toggleAllWidgets}
-          className="p-3 rounded-full bg-foreground/5 dark:bg-foreground/5 backdrop-blur-md border border-foreground/10 shadow-lg hover:scale-110 active:scale-95 transition-all group"
-          title="Toggle All Widgets"
+
+      {/* Navbar (Top-Attached Tab) */}
+      <div className="fixed top-0 left-1/2 -translate-x-1/2 z-[100] flex items-start justify-center">
+        <motion.div 
+          initial={{ y: -20, opacity: 0 }}
+          animate={{ y: 0, opacity: 1 }}
+          whileHover={{ scale: 1.02 }}
+          className="group relative flex items-center gap-2 bg-foreground/10 dark:bg-black/40 backdrop-blur-2xl px-6 py-2 rounded-b-2xl border-x border-b border-foreground/10 shadow-[0_8px_32px_rgba(0,0,0,0.1)] transition-all duration-500"
         >
-          {widgets.tasks || widgets.activity || widgets.rain || widgets.tabHistory ? (
-            <EyeOff className="w-5 h-5 text-foreground opacity-70 group-hover:opacity-100 transition-all duration-300" />
-          ) : (
-            <LayoutGrid className="w-5 h-5 text-foreground opacity-70 group-hover:opacity-100 transition-all duration-300" />
-          )}
-        </button>
-        <SettingsButton />
+          <button
+            onClick={toggleAllWidgets}
+            className="p-3 rounded-xl hover:bg-foreground/5 active:scale-90 transition-all group/btn"
+            title="Toggle All Widgets"
+          >
+            {widgets.tasks || widgets.appTracker || widgets.rain || widgets.tabHistory || widgets.quickNotes || widgets.focusReport ? (
+              <EyeOff className="w-5 h-5 text-foreground/70 group-hover/btn:text-foreground transition-all duration-300" />
+            ) : (
+              <LayoutGrid className="w-5 h-5 text-foreground/70 group-hover/btn:text-foreground transition-all duration-300" />
+            )}
+          </button>
+
+          {/* Vertical Separator */}
+          <div className="w-[1px] h-6 bg-foreground/10 mx-1" />
+
+          <SettingsButton className="!bg-transparent !border-none !shadow-none !p-3 rounded-xl hover:bg-foreground/5" />
+        </motion.div>
       </div>
 
-      {/* Main Layout Container */}
-      <div className="relative min-h-screen w-full flex flex-col lg:flex-row items-center justify-center p-6 lg:p-12 gap-8 lg:gap-0">
-        
-        {/* Left Side: App Tracker (Desktop) */}
-        <div className="lg:fixed lg:bottom-12 lg:left-12 z-40 w-full lg:w-auto flex flex-col items-center lg:items-start animate-enter [animation-delay:200ms] gap-6">
-          <AnimatePresence>
-            {widgets.activity && <AppTracker />}
-          </AnimatePresence>
+      {/* ═══════════ EDGE-DOCKED WIDGETS ═══════════ */}
 
-          <AnimatePresence>
-            {widgets.activity && <ReportWidget />}
-          </AnimatePresence>
-        </div>
+      {/* Left Edge — Top: AppTracker */}
+      <div className="hidden lg:block">
+        <EdgeWidget
+          side="left"
+          position="top"
+          icon={<Monitor size={14} />}
+          label="Apps"
+          visible={widgets.appTracker}
+        >
+          <AppTracker />
+        </EdgeWidget>
+      </div>
 
+      {/* Left Edge — Bottom: QuickNotes */}
+      <div className="hidden lg:block">
+        <EdgeWidget
+          side="left"
+          position="bottom"
+          icon={<StickyNote size={14} />}
+          label="Notes"
+          visible={widgets.quickNotes}
+        >
+          <QuickNotes />
+        </EdgeWidget>
+      </div>
+
+      {/* Right Edge — Top: TaskSection */}
+      <div className="hidden lg:block">
+        <EdgeWidget
+          side="right"
+          position="top"
+          icon={<Target size={14} />}
+          label="Tasks"
+          visible={widgets.tasks}
+        >
+          <TaskSection
+            activeTaskId={activeTaskId}
+            onSetActiveTask={setActiveTaskId}
+          />
+        </EdgeWidget>
+      </div>
+
+      {/* Right Edge — Bottom: TabTracker */}
+      <div className="hidden lg:block">
+        <EdgeWidget
+          side="right"
+          position="bottom"
+          icon={<Globe size={14} />}
+          label="Tabs"
+          visible={widgets.tabHistory}
+        >
+          <TabTracker />
+        </EdgeWidget>
+      </div>
+
+      {/* ═══════════ CENTER HERO ═══════════ */}
+
+      <div className="relative min-h-screen w-full flex flex-col items-center justify-center p-6 lg:p-12">
         {/* Center: Hero Section (Eyes & Timer) */}
-        <main className="flex flex-col items-center justify-center gap-12 lg:gap-16 w-full max-w-2xl z-10 lg:-translate-y-8">
+        <main className="flex flex-col items-center justify-center gap-12 lg:gap-16 w-full max-w-2xl z-10">
            {/* Branding (Mobile) */}
            <div className="lg:hidden flex flex-col items-center gap-2 mb-4 opacity-40">
              <span className="text-[10px] font-semibold uppercase tracking-[0.5em]">Meow Companion</span>
@@ -172,26 +240,26 @@ export default function Home() {
           />
         </main>
 
-        {/* Right Side: Tasks & Tab History (Desktop) */}
-        <div className="lg:fixed lg:top-12 lg:right-12 lg:bottom-12 z-40 w-full lg:w-auto flex flex-col gap-6 items-center lg:items-end lg:justify-between animate-enter [animation-delay:400ms]">
-          <div className="w-full lg:w-auto">
-            <AnimatePresence>
-              {widgets.tasks && (
-                <TaskSection
-                  activeTaskId={activeTaskId}
-                  onSetActiveTask={setActiveTaskId}
-                />
-              )}
-            </AnimatePresence>
-          </div>
-
-          <div className="w-full lg:w-auto">
-            <AnimatePresence>
-              {widgets.tabHistory && (
-                <TabTracker />
-              )}
-            </AnimatePresence>
-          </div>
+        {/* ═══════════ MOBILE WIDGETS (stacked below hero) ═══════════ */}
+        <div className="lg:hidden flex flex-col gap-4 w-full max-w-sm mt-12">
+          <AnimatePresence mode="wait">
+            {widgets.appTracker && <AppTracker key="app-tracker-mobile" />}
+          </AnimatePresence>
+          <AnimatePresence mode="wait">
+            {widgets.tasks && (
+              <TaskSection
+                key="task-section-mobile"
+                activeTaskId={activeTaskId}
+                onSetActiveTask={setActiveTaskId}
+              />
+            )}
+          </AnimatePresence>
+          <AnimatePresence mode="wait">
+            {widgets.quickNotes && <QuickNotes key="quick-notes-mobile" />}
+          </AnimatePresence>
+          <AnimatePresence mode="wait">
+            {widgets.tabHistory && <TabTracker key="tab-tracker-mobile" />}
+          </AnimatePresence>
         </div>
 
         {/* User Profile Hook */}
@@ -232,9 +300,25 @@ export default function Home() {
         subMessage={`Nice. You focused for ${Math.floor(lastSessionTime / 60)}m ${lastSessionTime % 60}s 🎯`}
       />
 
-      <footer className="fixed bottom-8 left-1/2 -translate-x-1/2 z-50 pointer-events-none lg:pointer-events-auto">
-        <div className="flex flex-col items-center gap-4">
-          <div className="mode-toggle-wrapper px-1 py-1 pointer-events-auto">
+      {/* ═══════════ BOTTOM BAR: Report Strip + Mode Toggle ═══════════ */}
+      <footer className="fixed bottom-0 left-0 right-0 z-50 pointer-events-none flex flex-col items-center gap-3 pb-6">
+        {/* Report Strip */}
+        <AnimatePresence>
+          {widgets.focusReport && (
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: 20 }}
+              className="pointer-events-auto"
+            >
+              <ReportWidget />
+            </motion.div>
+          )}
+        </AnimatePresence>
+
+        {/* Mode Toggle */}
+        <div className="flex flex-col items-center gap-4 pointer-events-auto">
+          <div className="mode-toggle-wrapper px-1 py-1">
             <div className="mode-toggle relative flex w-[260px] h-[40px] bg-foreground/[0.03] border border-foreground/[0.08] backdrop-blur-md rounded-full overflow-hidden">
               <motion.div
                 className="absolute top-1 left-1 bottom-1 w-[calc(50%-4px)] bg-foreground rounded-full shadow-lg"
@@ -266,7 +350,8 @@ export default function Home() {
         .animate-pulse {
           animation: bg-pulse 8s ease-in-out infinite;
         }
-      `}</style>
-    </Component>
+      `}
+      </style>
+    </div>
   );
 }
