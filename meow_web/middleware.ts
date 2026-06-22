@@ -11,5 +11,7 @@ export const config = {
     "/dashboard/:path*",
     "/api/tasks/:path*",
     "/api/settings/:path*",
+    "/portal/:path*",
+    "/disturbance/:path*",
   ],
 };

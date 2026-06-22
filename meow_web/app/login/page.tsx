@@ -231,7 +231,7 @@ function LoginContent() {
             </div>
 
             <button
-              onClick={() => signIn('google', { callbackUrl: '/dashboard' })}
+              onClick={() => signIn('google', { callbackUrl: '/portal' })}
               className="group w-full h-12 border border-foreground/[0.08] bg-foreground/[0.02] hover:bg-foreground/[0.06] flex items-center justify-center gap-3 transition-all hover:border-foreground/20"
             >
               <IconBrandGoogle className="w-4 h-4 opacity-50 group-hover:opacity-100 transition-opacity" />

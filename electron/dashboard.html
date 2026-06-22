@@ -1,0 +1,354 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Meow Dashboard</title>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      background: #0a0a0f;
+      color: #fff;
+      font-family: 'Inter', 'Segoe UI', -apple-system, sans-serif;
+      overflow-y: auto;
+    }
+
+    button, input, a, .timer-display, .qr-section { 
+      -webkit-app-region: no-drag;
+      cursor: pointer;
+    }
+
+    .container {
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 40px 24px;
+      position: relative;
+    }
+
+    /* Subtle gradient background */
+    .container::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 300px;
+      height: 300px;
+      background: radial-gradient(circle, rgba(139, 92, 246, 0.15) 0%, transparent 70%);
+      pointer-events: none;
+    }
+
+    .logo {
+      width: 64px;
+      height: 64px;
+      margin-bottom: 8px;
+      border-radius: 16px;
+      filter: drop-shadow(0 0 20px rgba(139, 92, 246, 0.3));
+    }
+
+    h1 {
+      font-size: 28px;
+      font-weight: 700;
+      background: linear-gradient(135deg, #c084fc, #818cf8);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      margin-bottom: 32px;
+      letter-spacing: -0.5px;
+    }
+
+    /* Focus Timer Section */
+    .timer-section {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 20px;
+      margin-bottom: 36px;
+      position: relative;
+      z-index: 1;
+    }
+
+    .timer-display {
+      font-size: 56px;
+      font-weight: 300;
+      font-family: 'Consolas', 'Courier New', monospace;
+      color: #c4b5fd;
+      letter-spacing: 4px;
+      font-variant-numeric: tabular-nums;
+      text-shadow: 0 0 30px rgba(196, 181, 253, 0.2);
+    }
+
+    .timer-controls {
+      display: flex;
+      gap: 12px;
+    }
+
+    .btn {
+      padding: 12px 28px;
+      border: none;
+      border-radius: 12px;
+      font-size: 14px;
+      font-weight: 600;
+      font-family: 'Inter', sans-serif;
+      cursor: pointer;
+      transition: all 0.25s ease;
+      letter-spacing: 0.3px;
+    }
+
+    .btn-start {
+      background: linear-gradient(135deg, #22c55e, #16a34a);
+      color: #fff;
+      box-shadow: 0 4px 15px rgba(34, 197, 94, 0.3);
+    }
+    .btn-start:hover { transform: translateY(-2px); box-shadow: 0 6px 20px rgba(34, 197, 94, 0.4); }
+
+    .btn-stop {
+      background: linear-gradient(135deg, #ef4444, #dc2626);
+      color: #fff;
+      box-shadow: 0 4px 15px rgba(239, 68, 68, 0.3);
+    }
+    .btn-stop:hover { transform: translateY(-2px); box-shadow: 0 6px 20px rgba(239, 68, 68, 0.4); }
+
+    .btn-restart {
+      background: linear-gradient(135deg, #3b82f6, #2563eb);
+      color: #fff;
+      box-shadow: 0 4px 15px rgba(59, 130, 246, 0.3);
+    }
+    .btn-restart:hover:not(:disabled) { transform: translateY(-2px); box-shadow: 0 6px 20px rgba(59, 130, 246, 0.4); }
+    .btn-restart:disabled { opacity: 0.4; cursor: not-allowed; transform: none; }
+
+    /* Divider */
+    .divider {
+      width: 80%;
+      height: 1px;
+      background: linear-gradient(90deg, transparent, rgba(255,255,255,0.1), transparent);
+      margin-bottom: 28px;
+    }
+
+    /* QR Section */
+    .qr-toggle {
+      background: linear-gradient(135deg, #8b5cf6, #7c3aed);
+      color: #fff;
+      box-shadow: 0 4px 15px rgba(139, 92, 246, 0.3);
+      margin-bottom: 24px;
+    }
+    .qr-toggle:hover { transform: translateY(-2px); box-shadow: 0 6px 20px rgba(139, 92, 246, 0.4); }
+
+    .qr-section {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 16px;
+      animation: fadeIn 0.3s ease-out;
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(10px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    .qr-description {
+      color: rgba(255,255,255,0.5);
+      font-size: 13px;
+      text-align: center;
+      line-height: 1.6;
+      max-width: 280px;
+    }
+
+    .qr-container {
+      background: #fff;
+      padding: 16px;
+      border-radius: 16px;
+      box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
+    }
+
+    .qr-container canvas {
+      display: block;
+      border-radius: 4px;
+    }
+
+    .ip-display {
+      font-size: 13px;
+      color: rgba(255,255,255,0.35);
+      font-family: 'Consolas', 'Courier New', monospace;
+      letter-spacing: 1px;
+    }
+
+    .loading {
+      color: rgba(255,255,255,0.3);
+      animation: fadePulse 2s ease-in-out infinite;
+    }
+
+    @keyframes fadePulse {
+      0%, 100% { opacity: 0.3; }
+      50% { opacity: 0.8; }
+    }
+
+    .hidden { display: none !important; }
+  </style>
+  <!-- QR Code library -->
+  <script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.3/build/qrcode.min.js"></script>
+</head>
+<body>
+  <div class="container">
+    <img class="logo" id="logoImg" src="Meow_logo.png" alt="Meow">
+    <h1>Meow Focus</h1>
+
+    <!-- Timer Section -->
+    <div class="timer-section">
+      <div class="timer-display" id="timerDisplay">0:00</div>
+      <div class="timer-controls">
+        <button class="btn btn-start" id="startBtn">Start Focus</button>
+        <button class="btn btn-stop hidden" id="stopBtn">Stop Focus</button>
+        <button class="btn btn-restart" id="restartBtn" disabled>Restart</button>
+      </div>
+    </div>
+
+    <div class="divider"></div>
+
+    <!-- QR Toggle -->
+    <button class="btn qr-toggle" id="qrToggleBtn">Show QR Code</button>
+
+    <!-- QR Section (hidden initially) -->
+    <div class="qr-section hidden" id="qrSection">
+      <p class="qr-description">
+        Scan this QR code with the FocusSync Android App to connect your devices.
+      </p>
+      <div id="qrLoading" class="loading">Generating QR Code...</div>
+      <div class="qr-container hidden" id="qrContainer">
+        <canvas id="qrCanvas"></canvas>
+      </div>
+      <div class="ip-display hidden" id="ipDisplay"></div>
+    </div>
+  </div>
+
+  <script>
+    const { electronAPI } = window;
+
+    let focusActive = false;
+    let timeElapsed = 0;
+    let timerId = null;
+
+    const timerDisplay = document.getElementById('timerDisplay');
+    const startBtn = document.getElementById('startBtn');
+    const stopBtn = document.getElementById('stopBtn');
+    const restartBtn = document.getElementById('restartBtn');
+    const qrToggleBtn = document.getElementById('qrToggleBtn');
+    const qrSection = document.getElementById('qrSection');
+    const qrLoading = document.getElementById('qrLoading');
+    const qrContainer = document.getElementById('qrContainer');
+    const qrCanvas = document.getElementById('qrCanvas');
+    const ipDisplay = document.getElementById('ipDisplay');
+
+    function formatTime(seconds) {
+      const mins = Math.floor(seconds / 60);
+      const secs = seconds % 60;
+      return `${mins}:${String(secs).padStart(2, '0')}`;
+    }
+
+    function updateTimer() {
+      timerDisplay.textContent = formatTime(timeElapsed);
+    }
+
+    function startTimerInterval() {
+      stopTimerInterval();
+      timerId = setInterval(() => {
+        timeElapsed++;
+        updateTimer();
+      }, 1000);
+    }
+
+    function stopTimerInterval() {
+      if (timerId) { clearInterval(timerId); timerId = null; }
+    }
+
+    function updateUI() {
+      startBtn.classList.toggle('hidden', focusActive);
+      stopBtn.classList.toggle('hidden', !focusActive);
+      restartBtn.disabled = !focusActive;
+    }
+
+    // Start Focus
+    startBtn.addEventListener('click', () => {
+      console.log('Start Focus button clicked');
+      electronAPI.startFocus();
+      focusActive = true;
+      timeElapsed = 0;
+      updateTimer();
+      updateUI();
+      startTimerInterval();
+      console.log('Focus started');
+    });
+
+    // Stop Focus
+    stopBtn.addEventListener('click', () => {
+      console.log('Stop Focus button clicked');
+      electronAPI.stopFocus();
+      focusActive = false;
+      timeElapsed = 0;
+      updateTimer();
+      updateUI();
+      stopTimerInterval();
+      console.log('Focus stopped');
+    });
+
+    // Restart Focus
+    restartBtn.addEventListener('click', () => {
+      console.log('Restart Focus button clicked');
+      electronAPI.restartFocus();
+      focusActive = true;
+      timeElapsed = 0;
+      updateTimer();
+      updateUI();
+      startTimerInterval();
+      console.log('Focus restarted');
+    });
+
+    // QR Toggle
+    let qrVisible = false;
+    qrToggleBtn.addEventListener('click', () => {
+      qrVisible = !qrVisible;
+      qrSection.classList.toggle('hidden', !qrVisible);
+      qrToggleBtn.textContent = qrVisible ? 'Hide QR Code' : 'Show QR Code';
+    });
+
+    // Init
+    async function init() {
+      // Get focus status
+      const status = await electronAPI.getFocusStatus();
+      focusActive = status.active;
+      if (status.active && status.startTime) {
+        timeElapsed = Math.floor((Date.now() - status.startTime) / 1000);
+        startTimerInterval();
+      }
+      updateTimer();
+      updateUI();
+
+      // Generate QR
+      const qrData = await electronAPI.getQrData();
+      if (qrData) {
+        QRCode.toCanvas(qrCanvas, JSON.stringify(qrData), {
+          width: 200,
+          margin: 0,
+          color: { dark: '#000', light: '#fff' }
+        }, (error) => {
+          if (!error) {
+            qrLoading.classList.add('hidden');
+            qrContainer.classList.remove('hidden');
+            ipDisplay.classList.remove('hidden');
+            ipDisplay.textContent = `IP: ${qrData.ip}:${qrData.port}`;
+          }
+        });
+      }
+    }
+
+    init();
+  </script>
+</body>
+</html>

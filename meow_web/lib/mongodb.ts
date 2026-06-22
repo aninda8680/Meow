@@ -6,6 +6,9 @@ if (!MONGODB_URI) {
   throw new Error("Please define the MONGODB_URI environment variable inside .env.local");
 }
 
+console.log("🔌 Attempting to connect to MongoDB with URI starting with:", MONGODB_URI.substring(0, 20) + "...");
+
+
 /**
  * Global is used here to maintain a cached connection across hot reloads
  * in development. This prevents connections from growing exponentially

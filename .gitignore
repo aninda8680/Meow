@@ -1,27 +1,143 @@
+# =========================
+# Root-level configurations
+# =========================
+
 # dependencies
 node_modules/
+.pnp
+.pnp.*
+.yarn/*
+!.yarn/patches
+!.yarn/plugins
+!.yarn/releases
+!.yarn/versions
 
-# next
-.next/
-
-# electron build
-dist/
-out/
-
-# binaries
-*.exe
-
-# env
+# environment variables
 .env*
 
 # logs
 *.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.pnpm-debug.log*
 
-# generated release artifacts
+# misc
+.DS_Store
+*.pem
+**/__MACOSX/
+
+# testing
+coverage/
+
+# =========================
+# Web (Next.js)
+# =========================
+.next/
+out/
+build/
+.vercel
+*.tsbuildinfo
+next-env.d.ts
+
+# =========================
+# Electron
+# =========================
+dist/
 release/
+*.exe
 meow_web/public/downloads/win-unpacked/
 meow_web/public/downloads/builder-debug.yml
 meow_web/public/downloads/builder-effective-config.yaml
 
-# macOS archive metadata
-**/__MACOSX/
+# =========================
+# Flutter / Dart Mobile Apps
+# =========================
+
+# Miscellaneous
+*.class
+*.pyc
+*.swp
+.atom/
+.build/
+.buildlog/
+.history
+.svn/
+.swiftpm/
+migrate_working_dir/
+
+# IntelliJ related
+*.iml
+*.ipr
+*.iws
+.idea/
+
+# Flutter/Dart/Pub related
+**/doc/api/
+**/ios/Flutter/.last_build_id
+.dart_tool/
+.flutter-plugins-dependencies
+.pub-cache/
+.pub/
+
+# Symbolication / Obfuscation
+*.symbols
+*.map.json
+
+# Android
+**/android/app/debug/
+**/android/app/profile/
+**/android/app/release/
+**/android/gradle-wrapper.jar
+**/android/.gradle/
+**/android/captures/
+**/android/gradlew
+**/android/gradlew.bat
+**/android/local.properties
+**/android/**/GeneratedPluginRegistrant.java
+**/android/.cxx/
+**/android/key.properties
+**/*.keystore
+**/*.jks
+
+# iOS
+**/ios/**/dgph
+**/ios/*.mode1v3
+**/ios/*.mode2v3
+**/ios/*.moved-aside
+**/ios/*.pbxuser
+**/ios/*.perspectivev3
+**/ios/**/*sync/
+**/ios/.sconsign.dblite
+**/ios/.tags*
+**/ios/**/.vagrant/
+**/ios/**/DerivedData/
+**/ios/Icon?
+**/ios/**/Pods/
+**/ios/**/.symlinks/
+**/ios/profile
+**/ios/xcuserdata
+**/ios/**/.generated/
+**/ios/Flutter/App.framework
+**/ios/Flutter/Flutter.framework
+**/ios/Flutter/Flutter.podspec
+**/ios/Flutter/Generated.xcconfig
+**/ios/Flutter/ephemeral/
+**/ios/Flutter/app.flx
+**/ios/Flutter/app.zip
+**/ios/Flutter/flutter_assets/
+**/ios/Flutter/flutter_export_environment.sh
+**/ios/ServiceDefinitions.json
+**/ios/Runner/GeneratedPluginRegistrant.*
+!**/ios/default.mode1v3
+!**/ios/default.mode2v3
+!**/ios/default.pbxuser
+!**/ios/default.perspectivev3
+
+# macOS / Windows / Linux (Flutter Desktop)
+**/macos/Flutter/ephemeral/
+**/macos/Flutter/GeneratedPluginRegistrant.swift
+**/windows/flutter/ephemeral/
+**/windows/flutter/generated_plugin_registrant.cc
+**/linux/flutter/ephemeral/
+**/linux/flutter/generated_plugin_registrant.cc
