@@ -21,17 +21,27 @@ export const authOptions: NextAuthOptions = {
         password: { label: "Password", type: "password" }
       },
       async authorize(credentials) {
-        await dbConnect();
-        
-        const user = await User.findOne({ email: credentials?.email });
-        
-        if (user && user.password && credentials?.password) {
-          const isPasswordMatch = await bcrypt.compare(credentials.password, user.password);
-          if (isPasswordMatch) {
-            return user;
+        console.log("[Auth] Authorize called with email:", credentials?.email);
+        try {
+          await dbConnect();
+          console.log("[Auth] DB Connected successfully");
+          
+          const user = await User.findOne({ email: credentials?.email });
+          console.log("[Auth] User found in DB:", user ? "Yes" : "No");
+          
+          if (user && user.password && credentials?.password) {
+            const isPasswordMatch = await bcrypt.compare(credentials.password, user.password);
+            console.log("[Auth] Password match result:", isPasswordMatch);
+            if (isPasswordMatch) {
+              return user;
+            }
           }
+          console.log("[Auth] Invalid credentials or password mismatch");
+          return null;
+        } catch (error) {
+          console.error("[Auth] Error in authorize function:", error);
+          return null;
         }
-        return null;
       }
     })
   ],

@@ -48,17 +48,29 @@ function LoginContent() {
     const email = formData.get('email') as string
     const password = formData.get('password') as string
 
-    const res = await signIn('credentials', {
-      email,
-      password,
-      redirect: false,
-    })
+    console.log("Attempting login with email:", email)
+    
+    try {
+      const res = await signIn('credentials', {
+        email,
+        password,
+        redirect: false,
+      })
+      
+      console.log("SignIn response:", res)
 
-    if (res?.error) {
-      setError('Invalid credentials')
+      if (res?.error) {
+        console.error("SignIn error from NextAuth:", res.error)
+        setError('Invalid credentials')
+        setIsLoading(false)
+      } else {
+        console.log("Login successful, redirecting to /dashboard")
+        router.push('/dashboard')
+      }
+    } catch (err) {
+      console.error("Exception during signIn:", err)
+      setError('Something went wrong')
       setIsLoading(false)
-    } else {
-      router.push('/dashboard')
     }
   }
 
