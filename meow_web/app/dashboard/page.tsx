@@ -138,7 +138,7 @@ export default function Home() {
             className="p-3 rounded-xl hover:bg-foreground/5 active:scale-90 transition-all group/btn"
             title="Toggle All Widgets"
           >
-            {widgets.tasks || widgets.appTracker || widgets.rain || widgets.tabHistory || widgets.quickNotes || widgets.focusReport ? (
+            {widgets.tasks || widgets.appTracker || widgets.tabHistory || widgets.quickNotes || widgets.focusReport ? (
               <EyeOff className="w-5 h-5 text-foreground/70 group-hover/btn:text-foreground transition-all duration-300" />
             ) : (
               <LayoutGrid className="w-5 h-5 text-foreground/70 group-hover/btn:text-foreground transition-all duration-300" />
