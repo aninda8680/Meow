@@ -29,6 +29,11 @@
     "react-dom": "19.2.3",
     "tailwind-merge": "^3.5.0"
   },
+  "overrides": {
+    "@auth/mongodb-adapter": {
+      "mongodb": "$mongodb"
+    }
+  },
   "devDependencies": {
     "@tailwindcss/postcss": "^4",
     "@types/node": "^20",
