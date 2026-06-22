@@ -438,7 +438,7 @@ export default function Timer({
           display: flex;
           align-items: center;
           justify-content: center;
-          font-family: var(--font-geist-sans), system-ui;
+          font-family: var(--font-vast-shadow), system-ui;
           color: var(--foreground);
           font-weight: 500;
           font-size: clamp(70px, 15vw, 140px);
