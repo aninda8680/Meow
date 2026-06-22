@@ -30,6 +30,95 @@ let focusStartTime = null;
 let isTimerDragging = false;
 const FOCUS_WS_PORT = 8080;
 
+// ═══════════════════════════════════════════════════
+//  MASTER CLOCK (Timer Sync)
+// ═══════════════════════════════════════════════════
+const masterTimer = {
+  seconds: 0,
+  isPaused: true,
+  mode: 'stopwatch',
+  pomoDuration: 25 * 60,
+  intervalId: null
+};
+
+function broadcastTimerState() {
+  const state = {
+    type: 'TIMER_STATE',
+    data: {
+      seconds: masterTimer.seconds,
+      isPaused: masterTimer.isPaused,
+      mode: masterTimer.mode,
+      pomoDuration: masterTimer.pomoDuration
+    }
+  };
+  
+  // Broadcast to website via Tracker WebSocket
+  trackerBroadcast(state);
+  
+  // Broadcast to Electron Notch Timer via IPC
+  if (timerOverlay && !timerOverlay.isDestroyed()) {
+    timerOverlay.webContents.send('timer-state-update', state.data);
+  }
+}
+
+function startMasterTimer() {
+  if (!masterTimer.isPaused) return;
+  masterTimer.isPaused = false;
+  
+  masterTimer.intervalId = setInterval(() => {
+    if (masterTimer.mode === 'stopwatch') {
+      masterTimer.seconds++;
+    } else {
+      if (masterTimer.seconds <= 0) {
+        masterTimer.isPaused = true;
+        clearInterval(masterTimer.intervalId);
+        masterTimer.intervalId = null;
+      } else {
+        masterTimer.seconds--;
+      }
+    }
+    broadcastTimerState();
+  }, 1000);
+  
+  broadcastTimerState();
+}
+
+function stopMasterTimer() {
+  if (masterTimer.isPaused) return;
+  masterTimer.isPaused = true;
+  if (masterTimer.intervalId) {
+    clearInterval(masterTimer.intervalId);
+    masterTimer.intervalId = null;
+  }
+  broadcastTimerState();
+}
+
+function resetMasterTimer() {
+  stopMasterTimer();
+  masterTimer.seconds = masterTimer.mode === 'pomodoro' ? masterTimer.pomoDuration : 0;
+  broadcastTimerState();
+}
+
+function setMasterTimerMode(mode, pomoDuration) {
+  stopMasterTimer();
+  masterTimer.mode = mode;
+  if (pomoDuration !== undefined) {
+    masterTimer.pomoDuration = pomoDuration;
+  }
+  masterTimer.seconds = masterTimer.mode === 'pomodoro' ? masterTimer.pomoDuration : 0;
+  broadcastTimerState();
+}
+
+function handleTimerAction(action) {
+  if (action.type === 'TOGGLE_PLAY') {
+    masterTimer.isPaused ? startMasterTimer() : stopMasterTimer();
+  } else if (action.type === 'RESET') {
+    resetMasterTimer();
+  } else if (action.type === 'SET_MODE') {
+    setMasterTimerMode(action.mode, action.pomoDuration);
+  }
+}
+
 // ───────────────────────────────────────────────────
 //  TRACKER: Broadcast to tracker WebSocket clients
 // ───────────────────────────────────────────────────
@@ -75,6 +164,16 @@ function startTrackerServer() {
   trackerWss.on("connection", (ws) => {
     console.log("🔗 Frontend connected to Tray");
     ws.send(JSON.stringify({ type: 'init', data: getStats() }));
+    // Immediately send current master timer state to newly connected website
+    ws.send(JSON.stringify({
+      type: 'TIMER_STATE',
+      data: {
+        seconds: masterTimer.seconds,
+        isPaused: masterTimer.isPaused,
+        mode: masterTimer.mode,
+        pomoDuration: masterTimer.pomoDuration
+      }
+    }));
 
     ws.on("message", (message) => {
       try {
@@ -85,6 +184,8 @@ function startTrackerServer() {
         } else if (data.type === 'CLEAR_DATA') {
           clearDB();
           trackerBroadcast({ type: 'stats', data: getStats() });
+        } else if (data.type === 'TIMER_ACTION') {
+          handleTimerAction(data.action);
         }
       } catch (e) {
         console.error("Msg error:", e);
@@ -153,9 +254,6 @@ function createDashboardWindow() {
 
   dashboardWindow.loadFile(path.join(__dirname, "dashboard.html"));
 
-  // Open DevTools for debugging
-  dashboardWindow.webContents.openDevTools({ mode: 'detach' });
-
   dashboardWindow.on('close', (event) => {
     if (!app.isQuitting) {
       event.preventDefault();
@@ -207,10 +305,9 @@ function createTimerOverlay() {
 
   timerOverlay.loadFile(path.join(__dirname, "timer.html"));
 
-  // Open DevTools for debugging
-  timerOverlay.webContents.openDevTools({ mode: 'detach' });
+  // Start transparent + click-through. React will enable on hover via IPC.
+  timerOverlay.setIgnoreMouseEvents(true, { forward: true });
 
-  // Log when window is ready
   timerOverlay.webContents.on('did-finish-load', () => {
     console.log('✅ Timer overlay loaded');
   });
@@ -442,6 +539,11 @@ ipcMain.on('call-action', (event, action) => {
   if (action !== 'accept') {
     hideCallPopup();
   }
+});
+
+// Timer sync actions
+ipcMain.on('timer-action', (event, action) => {
+  handleTimerAction(action);
 });
 
 // Timer window drag

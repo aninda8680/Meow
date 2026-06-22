@@ -3,7 +3,7 @@
 import { useState, useEffect, useRef } from "react";
 import { motion, useScroll, useTransform, useSpring } from "framer-motion";
 import Link from "next/link";
-import CatEyes from "@/components/Eyes";
+
 import { Zap, Shield, Target, Cpu, MousePointer2 } from "lucide-react";
 
 export default function LandingHero() {
@@ -182,10 +182,6 @@ export default function LandingHero() {
                             style={{ y: y2 }}
                             className="transform scale-[1.4]"
                         >
-                            <CatEyes
-                                catXFraction={mouseXSpring}
-                                catYFraction={mouseYSpring}
-                            />
                         </motion.div>
                     </motion.div>
 

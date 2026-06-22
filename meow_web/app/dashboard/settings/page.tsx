@@ -24,43 +24,60 @@ export default function SettingsPage() {
         focusReport: true,
     });
 
-    // Load from localStorage
+    // Load from API
     React.useEffect(() => {
         setMounted(true);
-        const storedName = localStorage.getItem("meow-username");
-        const storedAvatar = localStorage.getItem("meow-avatar");
-        const storedWidgets = localStorage.getItem("meow-widgets");
-
-        if (storedName) setUsername(storedName);
-        if (storedAvatar) setSelectedAvatar(storedAvatar);
-        if (storedWidgets) {
+        const loadSettings = async () => {
             try {
-                const parsed = JSON.parse(storedWidgets);
-                setWidgets(prev => ({ ...prev, ...parsed }));
+                const res = await fetch('/api/settings');
+                if (res.ok) {
+                    const data = await res.json();
+                    if (data.name) setUsername(data.name);
+                    if (data.avatar) setSelectedAvatar(data.avatar);
+                    if (data.widgets) {
+                        const w = { ...data.widgets };
+                        if ('activity' in w && !('appTracker' in w)) {
+                            w.appTracker = w.activity;
+                            w.focusReport = w.activity;
+                            delete w.activity;
+                        }
+                        setWidgets(prev => ({ ...prev, ...w }));
+                    }
+                }
             } catch (e) {
-                console.error("Failed to parse widgets", e);
+                console.error("Failed to load settings from API", e);
             }
-        }
+        };
+        loadSettings();
     }, []);
 
-    // Save to localStorage
-    const handleUsernameChange = (name: string) => {
-        setUsername(name);
-        localStorage.setItem("meow-username", name);
-        window.dispatchEvent(new Event('user-settings-changed'));
+    // Save to API
+    const saveToApi = async (updates: any) => {
+        try {
+            await fetch('/api/settings', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(updates)
+            });
+            window.dispatchEvent(new Event('user-settings-changed'));
+        } catch (e) {
+            console.error("Failed to save settings", e);
+        }
+    };
+
+    const handleUsernameBlur = () => {
+        saveToApi({ name: username });
     };
 
     const handleAvatarSelect = (avatar: string) => {
         setSelectedAvatar(avatar);
-        localStorage.setItem("meow-avatar", avatar);
-        window.dispatchEvent(new Event('user-settings-changed'));
+        saveToApi({ avatar });
     };
 
     const toggleWidget = (key: keyof typeof widgets) => {
         const newWidgets = { ...widgets, [key]: !widgets[key] };
         setWidgets(newWidgets);
-        localStorage.setItem("meow-widgets", JSON.stringify(newWidgets));
-        window.dispatchEvent(new Event('user-settings-changed'));
+        saveToApi({ widgets: newWidgets });
     };
 
     if (!mounted) return null;
@@ -112,7 +129,9 @@ export default function SettingsPage() {
                                 <input
                                     type="text"
                                     value={username}
-                                    onChange={(e) => handleUsernameChange(e.target.value)}
+                                    onChange={(e) => setUsername(e.target.value)}
+                                    onBlur={handleUsernameBlur}
+                                    onKeyDown={(e) => { if (e.key === 'Enter') e.currentTarget.blur(); }}
                                     placeholder="Enter pilot name..."
                                     className="w-full bg-transparent border-b-2 border-foreground/10 focus:border-foreground py-4 outline-none transition-all placeholder:opacity-20 text-3xl font-black tracking-tight"
                                 />

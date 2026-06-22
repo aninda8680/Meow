@@ -1,8 +1,8 @@
 "use client";
 
-import { useState, useCallback, useEffect } from "react";
+import { useState, useCallback, useEffect, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import CatEyes from "@/components/Eyes";
+
 import Timer from "@/components/Timer";
 import { SettingsButton } from "@/components/SettingsButton";
 import TaskSection from "@/components/widgets/TaskSection";
@@ -11,7 +11,6 @@ import TabTracker from "@/components/widgets/TabTracker";
 import { ReportWidget } from "@/components/widgets/ReportWidget";
 
 import QuickNotes from "@/components/widgets/QuickNotes";
-import EdgeWidget from "@/components/EdgeWidget";
 import { LogOut, LayoutGrid, EyeOff, Monitor, StickyNote, Globe, Target } from "lucide-react";
 import { useSession, signOut } from "next-auth/react";
 import CompletionToast from "@/components/CompletionToast";
@@ -34,6 +33,37 @@ export default function Home() {
     focusReport: true,
     tasks: true,
   });
+
+  const [isUIVisible, setIsUIVisible] = useState(true);
+  const uiTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+
+  const resetUITimeout = useCallback(() => {
+    setIsUIVisible(true);
+    if (uiTimeoutRef.current) {
+      clearTimeout(uiTimeoutRef.current);
+    }
+    uiTimeoutRef.current = setTimeout(() => {
+      setIsUIVisible(false);
+    }, 2500); // Hide UI after 2.5s of inactivity
+  }, []);
+
+  useEffect(() => {
+    // Start the timer when mounted
+    resetUITimeout();
+
+    const handleMouseMove = () => {
+      resetUITimeout();
+    };
+
+    window.addEventListener('mousemove', handleMouseMove);
+    window.addEventListener('touchstart', handleMouseMove);
+    
+    return () => {
+      window.removeEventListener('mousemove', handleMouseMove);
+      window.removeEventListener('touchstart', handleMouseMove);
+      if (uiTimeoutRef.current) clearTimeout(uiTimeoutRef.current);
+    };
+  }, [resetUITimeout]);
 
   // Load user settings from API
   const loadUserSettings = useCallback(async () => {
@@ -70,39 +100,38 @@ export default function Home() {
     return () => window.removeEventListener('user-settings-changed', loadUserSettings);
   }, [loadUserSettings]);
 
-
-  // Persist mode and other settings when they change
-  useEffect(() => {
-    if (!session) return;
-    const saveSettings = async () => {
+  const saveSettingsToApi = async (updates: any) => {
+    try {
        await fetch('/api/settings', {
          method: 'POST',
-         body: JSON.stringify({ mode, widgets })
+         headers: { 'Content-Type': 'application/json' },
+         body: JSON.stringify(updates)
        });
-    };
-    // Debounce this or only trigger on specific changes
-    // For now, let's just use it sparingly
-  }, [mode, widgets, session]);
+    } catch (e) {
+       console.error("Failed to save settings", e);
+    }
+  };
+
+  const handleModeChange = (newMode: TimerMode) => {
+    setMode(newMode);
+    if (session) saveSettingsToApi({ mode: newMode, widgets });
+  };
 
   const toggleAllWidgets = () => {
     const anyOn = widgets.tasks || widgets.appTracker || widgets.tabHistory || widgets.quickNotes || widgets.focusReport;
     const newState = !anyOn;
-    setWidgets({
+    const newWidgets = {
       tasks: newState,
       appTracker: newState,
       tabHistory: newState,
       quickNotes: newState,
       focusReport: newState,
-    });
+    };
+    setWidgets(newWidgets);
+    if (session) saveSettingsToApi({ mode, widgets: newWidgets });
   };
 
-  const getMoodFromState = (state: TimerState) => {
-    switch (state) {
-      case "running": return "happy";
-      case "paused": return "serious";
-      default: return "neutral";
-    }
-  };
+
 
   const handleTimerComplete = useCallback(() => {
     setShowCompletion(true);
@@ -126,87 +155,94 @@ export default function Home() {
 
 
       {/* Navbar (Top-Attached Tab) */}
-      <div className="fixed top-0 left-1/2 -translate-x-1/2 z-[100] flex items-start justify-center">
-        <motion.div 
-          initial={{ y: -20, opacity: 0 }}
-          animate={{ y: 0, opacity: 1 }}
-          whileHover={{ scale: 1.02 }}
-          className="group relative flex items-center gap-2 bg-foreground/10 dark:bg-black/40 backdrop-blur-2xl px-6 py-2 rounded-b-2xl border-x border-b border-foreground/10 shadow-[0_8px_32px_rgba(0,0,0,0.1)] transition-all duration-500"
-        >
-          <button
-            onClick={toggleAllWidgets}
-            className="p-3 rounded-xl hover:bg-foreground/5 active:scale-90 transition-all group/btn"
-            title="Toggle All Widgets"
-          >
-            {widgets.tasks || widgets.appTracker || widgets.tabHistory || widgets.quickNotes || widgets.focusReport ? (
-              <EyeOff className="w-5 h-5 text-foreground/70 group-hover/btn:text-foreground transition-all duration-300" />
-            ) : (
-              <LayoutGrid className="w-5 h-5 text-foreground/70 group-hover/btn:text-foreground transition-all duration-300" />
-            )}
-          </button>
+      <div className="fixed top-0 left-1/2 -translate-x-1/2 z-[100] flex items-start justify-center pointer-events-none">
+        <AnimatePresence>
+          {isUIVisible && (
+            <motion.div 
+              initial={{ y: "-100%", opacity: 0 }}
+              animate={{ y: 0, opacity: 1 }}
+              exit={{ y: "-100%", opacity: 0 }}
+              transition={{ type: "spring", stiffness: 300, damping: 30 }}
+              whileHover={{ scale: 1.02 }}
+              className="group relative flex items-center gap-2 bg-foreground/10 dark:bg-black/40 backdrop-blur-2xl px-6 py-2 rounded-b-2xl shadow-[0_8px_32px_rgba(0,0,0,0.1)] transition-all duration-500 pointer-events-auto"
+            >
+              <button
+                onClick={toggleAllWidgets}
+                className="p-3 rounded-xl hover:bg-foreground/5 active:scale-90 transition-all group/btn"
+                title="Toggle All Widgets"
+              >
+                {widgets.tasks || widgets.appTracker || widgets.tabHistory || widgets.quickNotes || widgets.focusReport ? (
+                  <EyeOff className="w-5 h-5 text-foreground/70 group-hover/btn:text-foreground transition-all duration-300" />
+                ) : (
+                  <LayoutGrid className="w-5 h-5 text-foreground/70 group-hover/btn:text-foreground transition-all duration-300" />
+                )}
+              </button>
 
-          {/* Vertical Separator */}
-          <div className="w-[1px] h-6 bg-foreground/10 mx-1" />
+              {/* Vertical Separator */}
+              <div className="w-[1px] h-6 bg-foreground/10 mx-1" />
 
-          <SettingsButton className="!bg-transparent !border-none !shadow-none !p-3 rounded-xl hover:bg-foreground/5" />
-        </motion.div>
+              <SettingsButton className="!bg-transparent !border-none !shadow-none !p-3 rounded-xl hover:bg-foreground/5" />
+            </motion.div>
+          )}
+        </AnimatePresence>
       </div>
 
-      {/* ═══════════ EDGE-DOCKED WIDGETS ═══════════ */}
+      {/* ═══════════ DESKTOP WIDGETS (Direct on Dashboard) ═══════════ */}
+      <div className="hidden lg:block pointer-events-none fixed inset-0 z-10">
+        <AnimatePresence>
+          {widgets.appTracker && (
+            <motion.div 
+              initial={{ opacity: 0, x: -20 }} 
+              animate={{ opacity: 1, x: 0 }} 
+              exit={{ opacity: 0, x: -20 }} 
+              className="absolute top-24 left-6 pointer-events-auto w-72 max-h-[70vh] overflow-y-auto custom-scrollbar"
+            >
+              <AppTracker />
+            </motion.div>
+          )}
+        </AnimatePresence>
 
-      {/* Left Edge — Top: AppTracker */}
-      <div className="hidden lg:block">
-        <EdgeWidget
-          side="left"
-          position="top"
-          icon={<Monitor size={14} />}
-          label="Apps"
-          visible={widgets.appTracker}
-        >
-          <AppTracker />
-        </EdgeWidget>
-      </div>
+        <AnimatePresence>
+          {widgets.quickNotes && (
+            <motion.div 
+              initial={{ opacity: 0, x: -20 }} 
+              animate={{ opacity: 1, x: 0 }} 
+              exit={{ opacity: 0, x: -20 }} 
+              className="absolute bottom-32 left-6 pointer-events-auto w-72 max-h-[70vh] overflow-y-auto custom-scrollbar"
+            >
+              <QuickNotes />
+            </motion.div>
+          )}
+        </AnimatePresence>
 
-      {/* Left Edge — Bottom: QuickNotes */}
-      <div className="hidden lg:block">
-        <EdgeWidget
-          side="left"
-          position="bottom"
-          icon={<StickyNote size={14} />}
-          label="Notes"
-          visible={widgets.quickNotes}
-        >
-          <QuickNotes />
-        </EdgeWidget>
-      </div>
+        <AnimatePresence>
+          {widgets.tasks && (
+            <motion.div 
+              initial={{ opacity: 0, x: 20 }} 
+              animate={{ opacity: 1, x: 0 }} 
+              exit={{ opacity: 0, x: 20 }} 
+              className="absolute top-24 right-6 pointer-events-auto w-72 max-h-[70vh] overflow-y-auto custom-scrollbar"
+            >
+              <TaskSection
+                activeTaskId={activeTaskId}
+                onSetActiveTask={setActiveTaskId}
+              />
+            </motion.div>
+          )}
+        </AnimatePresence>
 
-      {/* Right Edge — Top: TaskSection */}
-      <div className="hidden lg:block">
-        <EdgeWidget
-          side="right"
-          position="top"
-          icon={<Target size={14} />}
-          label="Tasks"
-          visible={widgets.tasks}
-        >
-          <TaskSection
-            activeTaskId={activeTaskId}
-            onSetActiveTask={setActiveTaskId}
-          />
-        </EdgeWidget>
-      </div>
-
-      {/* Right Edge — Bottom: TabTracker */}
-      <div className="hidden lg:block">
-        <EdgeWidget
-          side="right"
-          position="bottom"
-          icon={<Globe size={14} />}
-          label="Tabs"
-          visible={widgets.tabHistory}
-        >
-          <TabTracker />
-        </EdgeWidget>
+        <AnimatePresence>
+          {widgets.tabHistory && (
+            <motion.div 
+              initial={{ opacity: 0, x: 20 }} 
+              animate={{ opacity: 1, x: 0 }} 
+              exit={{ opacity: 0, x: 20 }} 
+              className="absolute bottom-32 right-6 pointer-events-auto w-72 max-h-[70vh] overflow-y-auto custom-scrollbar"
+            >
+              <TabTracker />
+            </motion.div>
+          )}
+        </AnimatePresence>
       </div>
 
       {/* ═══════════ CENTER HERO ═══════════ */}
@@ -219,17 +255,7 @@ export default function Home() {
              <span className="text-[10px] font-semibold uppercase tracking-[0.5em]">Meow Companion</span>
            </div>
 
-          <div className="flex flex-col items-center gap-6">
-            <motion.div 
-              initial={{ opacity: 0, scale: 0.9 }}
-              animate={{ opacity: 1, scale: 1 }}
-              className="transition-all duration-700 hover:scale-105 active:scale-95 cursor-pointer"
-            >
-              <CatEyes
-                baseMood={getMoodFromState(timerState)}
-              />
-            </motion.div>
-          </div>
+
 
           <Timer
             mode={mode}
@@ -317,29 +343,39 @@ export default function Home() {
         </AnimatePresence>
 
         {/* Mode Toggle */}
-        <div className="flex flex-col items-center gap-4 pointer-events-auto">
-          <div className="mode-toggle-wrapper px-1 py-1">
-            <div className="mode-toggle relative flex w-[260px] h-[40px] bg-foreground/[0.03] border border-foreground/[0.08] backdrop-blur-md rounded-full overflow-hidden">
-              <motion.div
-                className="absolute top-1 left-1 bottom-1 w-[calc(50%-4px)] bg-foreground rounded-full shadow-lg"
-                animate={{ x: mode === "countup" ? 0 : "100%" }}
-                transition={{ type: "spring", stiffness: 300, damping: 30 }}
-              />
-              <button
-                className={`flex-1 relative z-10 text-[11px] font-semibold uppercase tracking-wider transition-colors duration-300 ${mode === "countup" ? "text-background" : "text-foreground opacity-50 hover:opacity-100"}`}
-                onClick={() => setMode("countup")}
-              >
-                Count Up
-              </button>
-              <button
-                className={`flex-1 relative z-10 text-[11px] font-semibold uppercase tracking-wider transition-colors duration-300 ${mode === "countdown" ? "text-background" : "text-foreground opacity-50 hover:opacity-100"}`}
-                onClick={() => setMode("countdown")}
-              >
-                Count Down
-              </button>
-            </div>
-          </div>
-        </div>
+        <AnimatePresence>
+          {isUIVisible && (
+            <motion.div 
+              initial={{ opacity: 0, y: "100%" }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: "100%" }}
+              transition={{ type: "spring", stiffness: 300, damping: 30 }}
+              className="flex flex-col items-center gap-4 pointer-events-auto"
+            >
+              <div className="mode-toggle-wrapper px-1 py-1">
+                <div className="mode-toggle relative flex w-[260px] h-[40px] bg-foreground/[0.03] border border-foreground/[0.08] backdrop-blur-md rounded-full overflow-hidden">
+                  <motion.div
+                    className="absolute top-1 left-1 bottom-1 w-[calc(50%-4px)] bg-foreground rounded-full shadow-lg"
+                    animate={{ x: mode === "countup" ? 0 : "100%" }}
+                    transition={{ type: "spring", stiffness: 300, damping: 30 }}
+                  />
+                  <button
+                    className={`flex-1 relative z-10 text-[11px] font-semibold uppercase tracking-wider transition-colors duration-300 ${mode === "countup" ? "text-background" : "text-foreground opacity-50 hover:opacity-100"}`}
+                    onClick={() => handleModeChange("countup")}
+                  >
+                    Count Up
+                  </button>
+                  <button
+                    className={`flex-1 relative z-10 text-[11px] font-semibold uppercase tracking-wider transition-colors duration-300 ${mode === "countdown" ? "text-background" : "text-foreground opacity-50 hover:opacity-100"}`}
+                    onClick={() => handleModeChange("countdown")}
+                  >
+                    Count Down
+                  </button>
+                </div>
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
       </footer>
 
       <style jsx global>{`
@@ -349,6 +385,16 @@ export default function Home() {
         }
         .animate-pulse {
           animation: bg-pulse 8s ease-in-out infinite;
+        }
+        .custom-scrollbar::-webkit-scrollbar {
+          width: 4px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-track {
+          background: transparent;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb {
+          background: rgba(var(--foreground-rgb), 0.1);
+          border-radius: 10px;
         }
       `}
       </style>

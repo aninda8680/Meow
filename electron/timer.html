@@ -202,12 +202,11 @@
       console.log('✅ electronAPI is available');
     }
 
-    // State
+    // State (now synced from Master Clock)
     let seconds = 0;
     let isPaused = true;
     let mode = 'stopwatch'; // 'stopwatch' | 'pomodoro'
     let pomoDuration = 25 * 60;
-    let intervalId = null;
 
     // DOM
     const notch = document.getElementById('timerNotch');
@@ -242,68 +241,43 @@
       timeDisplay.textContent = formatTime(seconds);
     }
 
-    function startInterval() {
-      stopInterval();
-      if (isPaused) return;
-      intervalId = setInterval(() => {
-        if (mode === 'stopwatch') {
-          seconds++;
-        } else {
-          if (seconds <= 0) { isPaused = true; updatePlayPauseIcon(); stopInterval(); return; }
-          seconds--;
-        }
-        updateDisplay();
-      }, 1000);
-    }
-
-    function stopInterval() {
-      if (intervalId) { clearInterval(intervalId); intervalId = null; }
-    }
-
     function updatePlayPauseIcon() {
       playIcon.classList.toggle('hidden', !isPaused);
       pauseIcon.classList.toggle('hidden', isPaused);
+    }
+
+    // ─── Sync with Master Clock ─────────────────────
+    if (window.electronAPI.onTimerStateUpdate) {
+      window.electronAPI.onTimerStateUpdate((state) => {
+        seconds = state.seconds;
+        isPaused = state.isPaused;
+        mode = state.mode;
+        pomoDuration = state.pomoDuration;
+        
+        updateDisplay();
+        updatePlayPauseIcon();
+        settingsBtn.classList.toggle('hidden', mode !== 'pomodoro');
+      });
     }
 
     // ─── Button handlers ────────────────────────────
     document.getElementById('playPauseBtn').addEventListener('click', (e) => {
       e.stopPropagation();
       e.preventDefault();
-      console.log('Play/Pause clicked, isPaused:', isPaused);
-      isPaused = !isPaused;
-      updatePlayPauseIcon();
-      if (!isPaused) {
-        console.log('Starting timer...');
-        startInterval();
-      } else {
-        console.log('Pausing timer...');
-        stopInterval();
-      }
+      window.electronAPI.sendTimerAction({ type: 'TOGGLE_PLAY' });
     });
 
     document.getElementById('resetBtn').addEventListener('click', (e) => {
       e.stopPropagation();
       e.preventDefault();
-      console.log('Reset clicked');
-      isPaused = true;
-      updatePlayPauseIcon();
-      stopInterval();
-      seconds = mode === 'pomodoro' ? pomoDuration : 0;
-      updateDisplay();
+      window.electronAPI.sendTimerAction({ type: 'RESET' });
     });
 
     document.getElementById('modeBtn').addEventListener('click', (e) => {
       e.stopPropagation();
       e.preventDefault();
-      console.log('Mode clicked, switching from:', mode);
-      mode = mode === 'stopwatch' ? 'pomodoro' : 'stopwatch';
-      isPaused = true;
-      updatePlayPauseIcon();
-      stopInterval();
-      seconds = mode === 'pomodoro' ? pomoDuration : 0;
-      updateDisplay();
-      settingsBtn.classList.toggle('hidden', mode !== 'pomodoro');
-      console.log('Mode is now:', mode);
+      const newMode = mode === 'stopwatch' ? 'pomodoro' : 'stopwatch';
+      window.electronAPI.sendTimerAction({ type: 'SET_MODE', mode: newMode });
     });
 
     // Settings
@@ -327,9 +301,8 @@
       const h = parseInt(editHours.value) || 0;
       const m = parseInt(editMinutes.value) || 0;
       const s = parseInt(editSeconds.value) || 0;
-      pomoDuration = h * 3600 + m * 60 + s;
-      seconds = pomoDuration;
-      updateDisplay();
+      const newDuration = h * 3600 + m * 60 + s;
+      window.electronAPI.sendTimerAction({ type: 'SET_MODE', mode: 'pomodoro', pomoDuration: newDuration });
       closeSettings();
     });
 
@@ -441,6 +414,26 @@
 
     // Init
     updateDisplay();
+
+    // ─── Hover-based click-through toggle ───────────
+    // Electron starts the window with setIgnoreMouseEvents(true, { forward: true })
+    // so mouse moves are forwarded even when ignoring clicks.
+    // We check if the cursor is over the notch pill and toggle accordingly.
+    let isOverNotch = false;
+
+    document.addEventListener('mousemove', (e) => {
+      const rect = notch.getBoundingClientRect();
+      const over = e.clientX >= rect.left && e.clientX <= rect.right &&
+                   e.clientY >= rect.top  && e.clientY <= rect.bottom;
+
+      if (over && !isOverNotch) {
+        isOverNotch = true;
+        window.electronAPI.setIgnoreMouseEvents(false);
+      } else if (!over && isOverNotch && !isDragging) {
+        isOverNotch = false;
+        window.electronAPI.setIgnoreMouseEvents(true, { forward: true });
+      }
+    });
   </script>
 </body>
 </html>

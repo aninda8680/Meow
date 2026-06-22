@@ -21,6 +21,12 @@ contextBridge.exposeInMainWorld("electronAPI", {
   timerDragEnd: () => ipcRenderer.send("timer-drag-end"),
   setIgnoreMouseEvents: (ignore, options) =>
     ipcRenderer.send("set-ignore-mouse-events", ignore, options),
+  
+  // Timer Sync
+  sendTimerAction: (action) => ipcRenderer.send("timer-action", action),
+  onTimerStateUpdate: (callback) => {
+    ipcRenderer.on("timer-state-update", (_event, state) => callback(state));
+  },
 
   // FocusSync - Focus session
   startFocus: () => ipcRenderer.send("start-focus"),

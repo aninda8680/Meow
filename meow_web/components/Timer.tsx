@@ -47,35 +47,42 @@ export default function Timer({
     const [timerState, setTimerState] = useState<TimerState>("idle");
     const [duration, setDuration] = useState<number>(1500); // Default 25m
     const [customMinutes, setCustomMinutes] = useState<string>("25");
-    const intervalRef = useRef<NodeJS.Timeout | null>(null);
-    const sessionStartTimeRef = useRef<number | null>(null);
+    const [ws, setWs] = useState<WebSocket | null>(null);
 
     useEffect(() => {
         setIsMounted(true);
-        // Load local timer state from localStorage
-        const savedTime = localStorage.getItem("meow-time");
-        const savedDuration = localStorage.getItem("meow-duration");
-        const savedState = localStorage.getItem("meow-timer-state") as TimerState;
+        
+        const socket = new WebSocket("ws://localhost:5263");
+        socket.onopen = () => {
+            console.log("Timer connected to Master Clock");
+            setWs(socket);
+        };
+        
+        socket.onmessage = (event) => {
+            try {
+                const msg = JSON.parse(event.data);
+                if (msg.type === 'TIMER_STATE') {
+                    const state = msg.data;
+                    setTime(state.seconds);
+                    setTimerState(state.isPaused ? (state.seconds === 0 ? "idle" : "paused") : "running");
+                    
+                    const newMode = state.mode === 'pomodoro' ? 'countdown' : 'countup';
+                    if (newMode === 'countdown') {
+                        setDuration(state.pomoDuration);
+                    }
+                    if (mode !== newMode) {
+                        onModeChange(newMode);
+                    }
+                }
+            } catch (e) {
+                console.error("Timer WebSocket error:", e);
+            }
+        };
 
-        if (savedTime) setTime(parseInt(savedTime));
-        if (savedDuration) setDuration(parseInt(savedDuration));
+        socket.onclose = () => setWs(null);
 
-        // Resume running timer if detected
-        if (savedState === "running") {
-            setTimeout(() => start(), 100);
-        } else if (savedState) {
-            setTimerState(savedState);
-            // DO NOT call onStateChange here to avoid updating Home while it's mounting
-        }
-    }, []);
-
-    // Persist state changes
-    useEffect(() => {
-        if (!isMounted) return;
-        localStorage.setItem("meow-time", time.toString());
-        localStorage.setItem("meow-duration", duration.toString());
-        localStorage.setItem("meow-timer-state", timerState);
-    }, [time, duration, timerState, isMounted]);
+        return () => socket.close();
+    }, [mode, onModeChange]);
 
     // Sync time when mode changes ONLY if idle
     useEffect(() => {
@@ -88,103 +95,28 @@ export default function Timer({
         }
     }, [mode, duration, timerState, isMounted]);
 
-    // Clear interval on unmount
-    useEffect(() => {
-        return () => {
-            if (intervalRef.current) clearInterval(intervalRef.current);
-        };
-    }, []);
+    const sendAction = (action: any) => {
+        if (ws && ws.readyState === WebSocket.OPEN) {
+            ws.send(JSON.stringify({ type: 'TIMER_ACTION', action }));
+        }
+    };
 
     const start = () => {
         if (timerState === "running") return;
-
-        // If countdown and at 0, reset to duration or don't start
-        if (mode === "countdown" && time === 0) {
-            if (duration > 0) {
-                setTime(duration);
-            } else {
-                return;
-            }
-        }
-
-        setTimerState("running");
-        onStateChange?.("running");
-        sessionStartTimeRef.current = Date.now();
-
-        intervalRef.current = setInterval(() => {
-            let shouldStop = false;
-
-            setTime((prev) => {
-                if (mode === "countup") {
-                    return prev + 1;
-                } else {
-                    if (prev <= 1) {
-                        shouldStop = true;
-                        return 0;
-                    }
-                    return prev - 1;
-                }
-            });
-
-            // Perform side effects outside of setTime updater
-            if (shouldStop) {
-                if (intervalRef.current) {
-                    clearInterval(intervalRef.current);
-                    intervalRef.current = null;
-                }
-
-                setTimerState("idle");
-                onStateChange?.("idle");
-
-                if (sessionStartTimeRef.current) {
-                    const elapsed = Math.round((Date.now() - sessionStartTimeRef.current) / 1000);
-                    onSessionEnd?.(elapsed);
-                    sessionStartTimeRef.current = null;
-                }
-
-                onComplete?.();
-            }
-        }, 1000);
+        sendAction({ type: 'TOGGLE_PLAY' });
     };
 
     const pause = () => {
-        if (intervalRef.current) {
-            clearInterval(intervalRef.current);
-            intervalRef.current = null;
-        }
-        setTimerState("paused");
-        onStateChange?.("paused");
-
-        if (sessionStartTimeRef.current) {
-            const elapsed = Math.round((Date.now() - sessionStartTimeRef.current) / 1000);
-            if (elapsed > 0) onSessionEnd?.(elapsed);
-            sessionStartTimeRef.current = null;
-        }
+        sendAction({ type: 'TOGGLE_PLAY' });
     };
 
     const restart = () => {
-        if (sessionStartTimeRef.current) {
-            const elapsed = Math.round((Date.now() - sessionStartTimeRef.current) / 1000);
-            if (elapsed > 0) onSessionEnd?.(elapsed);
-            sessionStartTimeRef.current = null;
-        }
-
-        pause();
-        if (mode === "countup") {
-            setTime(0);
-        } else {
-            setTime(duration);
-        }
-        setTimerState("idle");
-        onStateChange?.("idle");
+        sendAction({ type: 'RESET' });
     };
 
     const setCountdownDuration = (mins: number) => {
-        pause();
         const secs = mins * 60;
-        setDuration(secs);
-        setTime(secs);
-        if (mode !== "countdown") onModeChange("countdown");
+        sendAction({ type: 'SET_MODE', mode: 'pomodoro', pomoDuration: secs });
     };
 
     const handleCustomSubmit = (e: React.FormEvent) => {

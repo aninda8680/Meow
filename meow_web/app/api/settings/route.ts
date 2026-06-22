@@ -32,9 +32,15 @@ export async function POST(req: Request) {
   const { name, avatar, mode, widgets } = await req.json();
   await dbConnect();
 
+  const updateData: any = {};
+  if (name !== undefined) updateData.name = name;
+  if (avatar !== undefined) updateData.avatar = avatar;
+  if (mode !== undefined) updateData.mode = mode;
+  if (widgets !== undefined) updateData.widgets = widgets;
+
   const settings = await Settings.findOneAndUpdate(
     { userId: (session.user as any).id },
-    { name, avatar, mode, widgets },
+    { $set: updateData },
     { upsert: true, new: true }
   );
 

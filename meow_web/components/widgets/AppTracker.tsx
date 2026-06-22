@@ -103,15 +103,7 @@ export default function AppTracker({ className }: AppTrackerProps) {
                     </div>
                 )}
 
-                <div className="flex flex-col gap-1">
-                    <span className="text-[10px] font-bold uppercase tracking-wider opacity-30">Total Screen Time</span>
-                    <div className="flex items-baseline gap-1">
-                        {/* FIX #8: Shows committed + live in-progress time */}
-                        <span className="text-2xl font-black tabular-nums">{formatTime(totalWithLive)}</span>
-                    </div>
-                </div>
 
-                <div className="h-px w-full bg-foreground/5" />
 
                 {/* Recent Apps */}
                 <div>
