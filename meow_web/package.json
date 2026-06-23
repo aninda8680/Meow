@@ -10,13 +10,10 @@
   },
   "dependencies": {
     "@auth/mongodb-adapter": "^3.11.2",
-    "@supabase/ssr": "^0.10.0",
-    "@supabase/supabase-js": "^2.101.1",
     "@tabler/icons-react": "^3.37.1",
     "bcryptjs": "^3.0.3",
     "clsx": "^2.1.1",
     "framer-motion": "^12.34.3",
-    "gsap": "^3.14.2",
     "lenis": "^1.3.17",
     "lucide-react": "^0.575.0",
     "mongodb": "^7.1.1",
