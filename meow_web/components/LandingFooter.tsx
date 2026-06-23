@@ -18,12 +18,12 @@ export default function LandingFooter() {
                             </div>
                             <div>
                                 <span
-                                    className="text-3xl font-bold tracking-tighter block"
-                                    style={{ fontFamily: "var(--font-pixel)" }}
+                                    className="text-4xl font-bold tracking-tighter block"
+                                    style={{ fontFamily: "var(--font-malinton)" }}
                                 >
                                     MEOW
                                 </span>
-                                <span className="text-[10px] uppercase tracking-[0.5em] font-bold opacity-30">Focus_Assistant</span>
+                                <span className="text-[10px] uppercase tracking-[0.5em] font-bold opacity-30" style={{ fontFamily: "var(--font-pixel)" }}>Focus_Assistant</span>
                             </div>
                         </div>
                         <p className="text-sm opacity-50 max-w-sm leading-relaxed">
@@ -33,7 +33,7 @@ export default function LandingFooter() {
                     </div>
 
                     <div className="flex flex-col gap-6">
-                        <span className="text-xs font-bold uppercase tracking-widest opacity-30">Subsystems</span>
+                        <span className="text-[11px] font-bold uppercase tracking-widest opacity-40" style={{ fontFamily: "var(--font-pixel)" }}>Subsystems</span>
                         <div className="flex flex-col gap-3 text-sm font-bold opacity-60">
                             <a href="#" className="hover:opacity-100 transition-opacity">Extension UI</a>
                             <a href="#" className="hover:opacity-100 transition-opacity">Analysis Engine</a>
@@ -43,7 +43,7 @@ export default function LandingFooter() {
                     </div>
 
                     <div className="flex flex-col gap-6">
-                        <span className="text-xs font-bold uppercase tracking-widest opacity-30">Network</span>
+                        <span className="text-[11px] font-bold uppercase tracking-widest opacity-40" style={{ fontFamily: "var(--font-pixel)" }}>Network</span>
                         <div className="flex flex-col gap-4">
                             <div className="flex gap-4">
                                 <a href="#" className="w-10 h-10 rounded-lg bg-foreground/[0.05] flex items-center justify-center hover:bg-foreground hover:text-background transition-all">
@@ -56,7 +56,7 @@ export default function LandingFooter() {
                                     <Mail size={18} />
                                 </a>
                             </div>
-                            <div className="text-[10px] font-mono opacity-30">
+                            <div className="text-[11px] font-medium opacity-30" style={{ fontFamily: "var(--font-pixel)" }}>
                                 HOST: MEOW_WEB_SERVER <br />
                                 LOC: EN/INTL
                             </div>
@@ -65,13 +65,13 @@ export default function LandingFooter() {
                 </div>
 
                 <div className="pt-10 border-t border-foreground/[0.05] flex flex-col md:flex-row justify-between items-center gap-6">
-                    <div className="flex gap-8 text-[10px] font-bold uppercase tracking-widest opacity-30">
+                    <div className="flex gap-8 text-[11px] font-medium uppercase tracking-widest opacity-30" style={{ fontFamily: "var(--font-pixel)" }}>
                         <a href="#" className="hover:opacity-100 transition-opacity">Privacy_Policy</a>
                         <a href="#" className="hover:opacity-100 transition-opacity">Terms_of_Service</a>
                         <a href="#" className="hover:opacity-100 transition-opacity">Open_Source</a>
                     </div>
 
-                    <div className="text-[10px] opacity-40 font-mono text-center md:text-right">
+                    <div className="text-[11px] opacity-40 text-center md:text-right font-medium" style={{ fontFamily: "var(--font-pixel)" }}>
                         © {new Date().getFullYear()} MEOW_OPERATIONS. ALL RIGHTS RESERVED. <br />
                         BUILD SHA: FW_8829_0X
                     </div>

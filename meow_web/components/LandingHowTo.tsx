@@ -1,154 +1,274 @@
 "use client";
 
 import { motion } from "framer-motion";
-import { Download, Globe, Monitor, HelpCircle, Code2, Terminal, AlertCircle } from "lucide-react";
+import { Download, Terminal, Monitor, Globe, AlertCircle } from "lucide-react";
+import Link from "next/link";
 
 const steps = [
     {
         id: "01",
-        icon: <Download className="w-6 h-6" />,
-        title: "TAB TELEMETRY",
-        subtitle: "BROWSER EXTENSION",
-        description: "Install the core bypass extension. This enables real-time browser telemetry and event hooks required for active tab mapping.",
-        link: "Download Extension",
-        href: "/downloads/meow-extension.zip",
-        download: "meow-extension.zip",
-        tag: ""
+        icon: Download,
+        title: "Install the Extension",
+        subtitle: "Browser Tab Telemetry",
+        description:
+            "Install the core bypass extension. This enables real-time browser telemetry and event hooks required for active tab mapping.",
+        action: { label: "Download Extension", href: "/downloads/meow-extension.zip", download: "meow-extension.zip" },
     },
     {
         id: "02",
-        icon: <Terminal className="w-6 h-6" />,
-        title: "APP TRACKER (CLI)",
-        subtitle: "COMMAND LINE INTERFACE",
-        description: "Run the zero-clone app tracker via Node.js. No installation required—just execute the mission-critical command.",
-        link: "npx meow-tracker",
-        href: "#",
-        tag: ""
+        icon: Terminal,
+        title: "Run the CLI Tracker",
+        subtitle: "App Activity Monitor",
+        description:
+            "Run the zero-clone app tracker via Node.js. No installation required — just execute the mission-critical command.",
+        action: { label: "npx meow-tracker", href: "#", isCode: true },
     },
     {
         id: "03",
-        icon: <Monitor className="w-6 h-6" />,
-        title: "SYSTEM TRAP APP",
-        subtitle: "NATIVE DESKTOP SHELL",
-        description: "A dedicated Electron-powered binary for system-wide focus containment and native OS hooks with system tray integration.",
-        link: "Download App",
-        href: "/downloads/Meow.exe",
-        download: "Meow.exe",
-        tag: ""
+        icon: Monitor,
+        title: "Download the Tray App",
+        subtitle: "Native Desktop Shell",
+        description:
+            "A dedicated Electron-powered binary for system-wide focus containment and native OS hooks with system tray integration.",
+        action: { label: "Download App", href: "/downloads/Meow.exe", download: "Meow.exe" },
     },
     {
         id: "04",
-        icon: <Globe className="w-6 h-6" />,
-        title: "MISSION CONTROL",
-        subtitle: "WEB CONSOLE",
-        description: "Initialize the web-based dashboard. This is your primary interface for focus visualization and deep session management.",
-        link: "Open Dashboard",
-        href: "/dashboard",
-        tag: ""
-    }
+        icon: Globe,
+        title: "Open Mission Control",
+        subtitle: "Web Dashboard",
+        description:
+            "Launch the web-based dashboard. Your primary interface for focus visualisation and deep session management.",
+        action: { label: "Open Dashboard →", href: "/dashboard" },
+    },
 ];
 
 export default function LandingHowTo() {
     return (
-        <section className="py-32 px-6 bg-foreground/[0.01] border-y border-foreground/[0.03] relative overflow-hidden">
-            <div className="max-w-7xl mx-auto">
-                {/* Massive Centered Heading */}
-                <div className="flex flex-col items-center mb-40 select-none">
-                    <h2 className="opacity-[0.15] text-[16vw] font-black pointer-events-none uppercase leading-none tracking-tighter whitespace-nowrap text-transparent bg-clip-text bg-gradient-to-br from-foreground to-foreground/20" style={{ fontFamily: "var(--font-malinton)" }}>
-                        Deploy
-                    </h2>
-                    <motion.div
-                        initial={{ opacity: 0, y: 10 }}
-                        whileInView={{ opacity: 1, y: 0 }}
-                        className="mt-8 flex items-center gap-3 px-4 py-2 bg-foreground/[0.03] border border-foreground/[0.05] rounded-full"
+        <section
+            id="how-to"
+            className="py-32 px-6 relative overflow-hidden"
+            style={{ backgroundColor: "#F5F5F2" }}
+        >
+            <div className="max-w-4xl mx-auto">
+                {/* Header */}
+                <motion.div
+                    initial={{ opacity: 0, y: 20 }}
+                    whileInView={{ opacity: 1, y: 0 }}
+                    viewport={{ once: true }}
+                    transition={{ duration: 0.6 }}
+                    className="mb-24"
+                >
+                    <span
+                        className="text-[12px] font-medium uppercase tracking-[0.4em] mb-4 block"
+                        style={{ color: "rgba(23,23,23,0.35)", fontFamily: "var(--font-pixel)" }}
                     >
-                        <Code2 size={14} className="text-foreground/40" />
-                        <span className="text-[10px] uppercase tracking-[0.2em] font-bold opacity-40">
-                            Prerequisite: <a href="https://nodejs.org" target="_blank" rel="noopener" className="underline hover:opacity-100 transition-opacity">Node.js Engine</a> (v18+)
-                        </span>
-                    </motion.div>
+                        Deployment
+                    </span>
+                    <h2
+                        className="text-4xl md:text-6xl font-black tracking-tighter leading-[0.95]"
+                        style={{ fontFamily: "var(--font-malinton)", color: "#171717" }}
+                    >
+                        Set it up in
+                        <br />
+                        <span style={{ color: "rgba(23,23,23,0.25)" }}>four steps.</span>
+                    </h2>
+                </motion.div>
+
+                {/* Timeline */}
+                <div className="relative">
+                    {/* The vertical line */}
+                    <motion.div
+                        initial={{ scaleY: 0 }}
+                        whileInView={{ scaleY: 1 }}
+                        viewport={{ once: true }}
+                        transition={{ duration: 1.2, ease: [0.16, 1, 0.3, 1] }}
+                        className="absolute left-[27px] top-0 bottom-0 w-[2px] origin-top"
+                        style={{ backgroundColor: "rgba(23,23,23,0.08)" }}
+                    />
+
+                    <div className="flex flex-col gap-0">
+                        {steps.map((step, i) => {
+                            const Icon = step.icon;
+                            const isLast = i === steps.length - 1;
+                            return (
+                                <motion.div
+                                    key={step.id}
+                                    initial={{ opacity: 0, x: -20 }}
+                                    whileInView={{ opacity: 1, x: 0 }}
+                                    viewport={{ once: true }}
+                                    transition={{ duration: 0.6, delay: i * 0.12, ease: [0.16, 1, 0.3, 1] }}
+                                    className={`relative flex gap-8 ${isLast ? "pb-0" : "pb-14"}`}
+                                >
+                                    {/* Circle node on the line */}
+                                    <div className="flex-shrink-0 relative z-10 flex flex-col items-center">
+                                        <motion.div
+                                            initial={{ scale: 0 }}
+                                            whileInView={{ scale: 1 }}
+                                            viewport={{ once: true }}
+                                            transition={{ duration: 0.4, delay: i * 0.12 + 0.2, type: "spring", stiffness: 300 }}
+                                            className="w-14 h-14 rounded-2xl flex items-center justify-center transition-all duration-300 group-hover:scale-110"
+                                            style={{
+                                                backgroundColor: "#fff",
+                                                border: "2px solid rgba(23,23,23,0.08)",
+                                                boxShadow: "0 2px 12px rgba(23,23,23,0.06)",
+                                            }}
+                                        >
+                                            <Icon
+                                                size={22}
+                                                style={{ color: "rgba(23,23,23,0.6)" }}
+                                            />
+                                        </motion.div>
+                                    </div>
+
+                                    {/* Content */}
+                                    <div className="flex-1 pt-3 pb-2">
+                                        <div className="flex items-center gap-3 mb-1">
+                                            <span
+                                                className="text-[11px] font-medium uppercase tracking-widest"
+                                                style={{ color: "rgba(23,23,23,0.35)", fontFamily: "var(--font-pixel)" }}
+                                            >
+                                                Step {step.id}
+                                            </span>
+                                            <span
+                                                className="text-[9px] font-bold uppercase tracking-widest px-2 py-0.5 rounded-full"
+                                                style={{
+                                                    color: "rgba(23,23,23,0.35)",
+                                                    backgroundColor: "rgba(23,23,23,0.05)",
+                                                }}
+                                            >
+                                                {step.subtitle}
+                                            </span>
+                                        </div>
+
+                                        <h3
+                                            className="text-xl md:text-2xl font-black tracking-tight mb-3"
+                                            style={{ fontFamily: "var(--font-malinton)", color: "#171717" }}
+                                        >
+                                            {step.title}
+                                        </h3>
+
+                                        <p
+                                            className="text-sm leading-relaxed mb-4 max-w-lg"
+                                            style={{ color: "rgba(23,23,23,0.5)" }}
+                                        >
+                                            {step.description}
+                                        </p>
+
+                                        {step.action && (
+                                            step.action.isCode ? (
+                                                <div
+                                                    className="inline-flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-mono font-bold"
+                                                    style={{
+                                                        backgroundColor: "rgba(23,23,23,0.05)",
+                                                        border: "1px solid rgba(23,23,23,0.08)",
+                                                        color: "#171717",
+                                                    }}
+                                                >
+                                                    <Terminal size={14} style={{ color: "rgba(23,23,23,0.4)" }} />
+                                                    {step.action.label}
+                                                </div>
+                                            ) : (
+                                                <a
+                                                    href={step.action.href}
+                                                    download={step.action.download}
+                                                    className="inline-flex items-center gap-1.5 text-xs font-bold uppercase tracking-widest transition-all duration-200"
+                                                    style={{
+                                                        color: "#171717",
+                                                        textDecoration: "underline",
+                                                        textDecorationColor: "rgba(23,23,23,0.25)",
+                                                        textUnderlineOffset: "4px",
+                                                        fontFamily: "var(--font-malinton)",
+                                                    }}
+                                                    onMouseEnter={e => {
+                                                        (e.currentTarget as HTMLAnchorElement).style.textDecorationColor = "#171717";
+                                                    }}
+                                                    onMouseLeave={e => {
+                                                        (e.currentTarget as HTMLAnchorElement).style.textDecorationColor = "rgba(23,23,23,0.25)";
+                                                    }}
+                                                >
+                                                    {step.action.label}
+                                                </a>
+                                            )
+                                        )}
+                                    </div>
+                                </motion.div>
+                            );
+                        })}
+                    </div>
                 </div>
 
-                <div className="max-w-4xl mx-auto flex flex-col gap-12 mb-32">
-                    {steps.map((step, i) => (
-                        <motion.div
-                            key={i}
-                            initial={{ opacity: 0, y: 20 }}
-                            whileInView={{ opacity: 1, y: 0 }}
-                            transition={{ delay: i * 0.1 }}
-                            viewport={{ once: true }}
-                            className="group relative flex flex-col md:flex-row gap-8 p-10 bg-background border border-foreground/[0.05] rounded-[32px] hover:border-foreground/20 transition-all shadow-sm"
-                        >
-                            <div className="flex-shrink-0 flex items-center md:flex-col gap-4">
-                                <div className="w-16 h-16 rounded-2xl bg-foreground/[0.03] flex items-center justify-center text-foreground group-hover:bg-foreground group-hover:text-background transition-colors duration-500">
-                                    {step.icon}
-                                </div>
-                                <span className="text-xl font-bold opacity-10">{step.id}</span>
-                            </div>
-
-                            <div className="flex-grow text-center md:text-left">
-                                <div className="flex flex-col md:flex-row items-center md:items-center gap-3 mb-2">
-                                    <h3 className="text-2xl font-bold tracking-tight" style={{ fontFamily: "var(--font-malinton)" }}>{step.title}</h3>
-                                    {step.tag && (
-                                        <span className="px-2 py-0.5 bg-foreground/5 text-[9px] font-bold rounded-md opacity-50 uppercase tracking-widest">{step.tag}</span>
-                                    )}
-                                </div>
-                                <div className="text-[10px] font-bold tracking-widest opacity-30 mb-4">{step.subtitle}</div>
-                                <p className="opacity-50 leading-relaxed mb-6 group-hover:opacity-70 transition-opacity max-w-2xl mx-auto md:mx-0">
-                                    {step.description}
-                                </p>
-                                {step.link && (
-                                    <a
-                                        href={step.href || "#"}
-                                        download={step.download}
-                                        className="text-xs font-bold underline underline-offset-8 decoration-foreground/20 hover:decoration-foreground transition-all cursor-pointer"
-                                    >
-                                        {step.link}
-                                    </a>
-                                )}
-                            </div>
-
-                            {/* Coming Soon Overlay for Staging */}
-                            {step.tag === "STAGING" && (
-                                <div className="absolute inset-0 bg-white/90 backdrop-blur-md flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-300 rounded-[32px] z-20 pointer-events-none">
-                                    <span className="text-2xl font-bold tracking-tighter uppercase text-black" style={{ fontFamily: 'var(--font-pixel)' }}>
-                                        Soon !
-                                    </span>
-                                </div>
-                            )}
-                        </motion.div>
-                    ))}
-                </div>
-
-                {/* Support Banner */}
+                {/* CTA Banner */}
                 <motion.div
                     initial={{ opacity: 0, y: 40 }}
                     whileInView={{ opacity: 1, y: 0 }}
                     viewport={{ once: true }}
-                    className="relative rounded-[48px] bg-foreground p-12 md:p-20 overflow-hidden"
+                    transition={{ duration: 0.7, delay: 0.2 }}
+                    className="mt-24 relative rounded-3xl p-10 md:p-14 overflow-hidden"
+                    style={{ backgroundColor: "#171717" }}
                 >
-                    {/* Background pattern */}
-                    <div className="absolute inset-0 opacity-[0.05]" style={{ backgroundImage: 'radial-gradient(var(--background) 1px, transparent 0)', backgroundSize: '24px 24px' }} />
+                    <div
+                        className="absolute inset-0 opacity-[0.04] pointer-events-none"
+                        style={{
+                            backgroundImage: "radial-gradient(#fff 1px, transparent 0)",
+                            backgroundSize: "24px 24px",
+                        }}
+                    />
 
-                    <div className="relative z-10 flex flex-col md:flex-row items-center justify-between gap-12 text-background">
-                        <div className="max-w-xl">
-                            <div className="inline-flex items-center gap-2 px-3 py-1 bg-background/10 rounded-full mb-8">
-                                <AlertCircle size={14} className="text-blue-400" />
-                                <span className="text-[10px] uppercase tracking-widest font-bold">Idea Incubator</span>
+                    <div className="relative z-10 flex flex-col md:flex-row items-start md:items-center justify-between gap-8">
+                        <div>
+                            <div
+                                className="inline-flex items-center gap-2 px-3 py-1 rounded-full mb-5"
+                                style={{ backgroundColor: "rgba(255,255,255,0.08)", border: "1px solid rgba(255,255,255,0.08)" }}
+                            >
+                                <AlertCircle size={13} style={{ color: "#60a5fa" }} />
+                                <span
+                                    className="text-[11px] font-medium uppercase tracking-widest"
+                                    style={{ color: "rgba(255,255,255,0.6)", fontFamily: "var(--font-pixel)" }}
+                                >
+                                    Idea Incubator
+                                </span>
                             </div>
-                            <h3 className="text-4xl md:text-6xl font-bold tracking-tighter mb-6 leading-none" style={{ fontFamily: "var(--font-malinton)" }}>
-                                HAVE A <br /> <span className="opacity-40">VISION?</span>
+                            <h3
+                                className="text-3xl md:text-5xl font-black tracking-tighter leading-none mb-4"
+                                style={{ fontFamily: "var(--font-malinton)", color: "#FAFAF8" }}
+                            >
+                                HAVE A <span style={{ color: "rgba(255,255,255,0.3)" }}>VISION?</span>
                             </h3>
-                            <p className="text-lg opacity-70">
-                                Meow is built by the obsessed, for the obsessed. If you have a feature suggestion, a unique workflow, or just an idea to make focus even sharper—we're all ears.
+                            <p
+                                className="text-sm leading-relaxed max-w-md"
+                                style={{ color: "rgba(255,255,255,0.5)" }}
+                            >
+                                Meow is built by the obsessed, for the obsessed. If you have a feature suggestion or a unique workflow — we're all ears.
                             </p>
                         </div>
 
-                        <div className="flex flex-col sm:flex-row gap-4 w-full md:w-auto">
-                            <button className="px-10 py-5 bg-background text-foreground rounded-2xl font-bold text-lg hover:scale-[1.05] transition-transform" style={{ fontFamily: "var(--font-malinton)" }}>
+                        <div className="flex flex-col sm:flex-row gap-3 flex-shrink-0">
+                            <button
+                                className="px-8 py-4 rounded-2xl text-sm font-black uppercase tracking-widest transition-all duration-200 hover:opacity-90"
+                                style={{
+                                    fontFamily: "var(--font-malinton)",
+                                    backgroundColor: "#FAFAF8",
+                                    color: "#171717",
+                                }}
+                            >
                                 Suggest Feature
                             </button>
-                            <button className="px-10 py-5 bg-background/10 border border-background/20 rounded-2xl font-bold text-lg hover:bg-background/20 transition-all" style={{ fontFamily: "var(--font-malinton)" }}>
+                            <button
+                                className="px-8 py-4 rounded-2xl text-sm font-black uppercase tracking-widest transition-all duration-200"
+                                style={{
+                                    fontFamily: "var(--font-malinton)",
+                                    backgroundColor: "rgba(255,255,255,0.06)",
+                                    border: "1px solid rgba(255,255,255,0.1)",
+                                    color: "rgba(255,255,255,0.7)",
+                                }}
+                                onMouseEnter={e => {
+                                    (e.currentTarget as HTMLButtonElement).style.backgroundColor = "rgba(255,255,255,0.1)";
+                                }}
+                                onMouseLeave={e => {
+                                    (e.currentTarget as HTMLButtonElement).style.backgroundColor = "rgba(255,255,255,0.06)";
+                                }}
+                            >
                                 Join the Lab
                             </button>
                         </div>

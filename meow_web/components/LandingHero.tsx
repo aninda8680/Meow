@@ -1,203 +1,151 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
-import { motion, useScroll, useTransform, useSpring } from "framer-motion";
+import { motion, useScroll, useTransform } from "framer-motion";
 import Link from "next/link";
-
-import { Zap, Shield, Target, Cpu, MousePointer2 } from "lucide-react";
+import { useRef } from "react";
 
 export default function LandingHero() {
     const containerRef = useRef<HTMLDivElement>(null);
     const { scrollY } = useScroll();
 
-    // Smooth springs for mouse tracking
-    const mouseXSpring = useSpring(0.5, { stiffness: 50, damping: 20 });
-    const mouseYSpring = useSpring(0.5, { stiffness: 50, damping: 20 });
-
-    // Derived values for animations (these are MotionValues)
-    const y1 = useTransform(scrollY, [0, 500], [0, 200]);
-    const y2 = useTransform(scrollY, [0, 500], [0, -150]);
-    const opacity = useTransform(scrollY, [0, 300], [0.03, 0]);
-
-    // Perspective & HUD transforms
-    const gridRotateX = useTransform(mouseYSpring, [0, 1], [5, -5]);
-    const gridRotateY = useTransform(mouseXSpring, [0, 1], [-5, 5]);
-    const ghostX = useTransform(mouseXSpring, [0, 1], [100, -100]);
-
-    useEffect(() => {
-        const handleMouseMove = (e: MouseEvent) => {
-            const x = e.clientX / window.innerWidth;
-            const y = e.clientY / window.innerHeight;
-            mouseXSpring.set(x);
-            mouseYSpring.set(y);
-        };
-
-        window.addEventListener("mousemove", handleMouseMove);
-        return () => window.removeEventListener("mousemove", handleMouseMove);
-    }, [mouseXSpring, mouseYSpring]);
+    // Parallax effects
+    const bgScale = useTransform(scrollY, [0, 800], [1.0, 1.02]);
+    const textY = useTransform(scrollY, [0, 800], [0, -100]);
+    const opacity = useTransform(scrollY, [0, 500], [1, 0]);
 
     return (
-        <section ref={containerRef} className="relative min-h-[120vh] flex items-center px-6 overflow-hidden bg-background">
-            {/* 
-                INSPIRED BY VENGENCE: INTERACTIVE PERSPECTIVE GRID
-                A deep 3D space that reacts to mouse movement
-            */}
-            <div className="absolute inset-0 z-0 pointer-events-none perspective-[1000px] overflow-hidden">
-                <motion.div
-                    style={{
-                        rotateX: gridRotateX,
-                        rotateY: gridRotateY,
-                        scale: 1.2,
-                        translateZ: 0
-                    }}
-                    className="absolute inset-0 flex items-center justify-center"
-                >
-                    {/* Main Grid Lines */}
-                    <div className="w-[200%] h-[200%] opacity-[0.03] dark:opacity-[0.07] bg-[linear-gradient(to_right,var(--foreground)_1px,transparent_1px),linear-gradient(to_bottom,var(--foreground)_1px,transparent_1px)] bg-[size:100px_100px]"
-                        style={{ maskImage: 'radial-gradient(circle at 50% 50%, black, transparent 80%)' }}
-                    />
-
-                    {/* Sub-Grid (Dynamic Grain) */}
-                    <div className="absolute inset-0 opacity-[0.015] bg-[linear-gradient(to_right,var(--foreground)_1px,transparent_1px),linear-gradient(to_bottom,var(--foreground)_1px,transparent_1px)] bg-[size:20px_20px]" />
-                </motion.div>
-
-                {/* 
-                    VENGENCE INSPIRED: LIGHT LINES 
-                    Flowing "data streams" through the grid
-                */}
-                <div className="absolute inset-0 overflow-hidden opacity-20">
-                    {[...Array(5)].map((_, i) => (
-                        <motion.div
-                            key={i}
-                            initial={{ top: "-20%", left: `${20 * i + 10}%` }}
-                            animate={{ top: "120%" }}
-                            transition={{
-                                duration: 8 + i * 2,
-                                repeat: Infinity,
-                                ease: "linear",
-                                delay: i * 1.5
-                            }}
-                            className="absolute w-[1px] h-40 bg-gradient-to-b from-transparent via-foreground/40 to-transparent"
-                        />
-                    ))}
-                </div>
-
-                <motion.div
-                    animate={{ x: ["-100%", "200%"] }}
-                    transition={{ duration: 15, repeat: Infinity, ease: "linear" }}
-                    className="absolute inset-y-0 w-[1px] bg-foreground/10 z-0"
+        <section
+            ref={containerRef}
+            className="relative w-full min-h-[100svh] overflow-hidden flex items-center"
+        >
+            <motion.div
+                style={{ scale: bgScale }}
+                className="absolute inset-0"
+            >
+                <img
+                    src="/image/hero.png"
+                    alt="Meow hero"
+                    className="w-full h-full object-cover object-center"
                 />
-            </div>
+            </motion.div>
 
-            <div className="max-w-7xl mx-auto z-10 grid lg:grid-cols-2 gap-20 items-center w-full">
-                {/* Left Side: Content with Glitch Text */}
-                <motion.div
-                    initial={{ opacity: 0, x: -50 }}
-                    animate={{ opacity: 1, x: 0 }}
-                    transition={{ duration: 0.8 }}
-                    className="flex flex-col gap-10 lg:-translate-y-12"
-                >
-                    <div className="flex flex-col gap-4">
-                        <div className="relative group overflow-hidden">
-                            <motion.h1
-                                initial={{ y: "100%" }}
-                                animate={{ y: 0 }}
-                                transition={{ duration: 1, ease: [0.16, 1, 0.3, 1] }}
-                                className="text-7xl md:text-[10rem] font-black tracking-tighter leading-[0.85]"
+            {/* ── Premium Gradient Overlays ── */}
+            {/* 1. Base darkening for text legibility (very subtle) */}
+            <div className="absolute inset-0 bg-black/15 z-[1]" />
+
+            {/* 2. Soft radial gradient from the left to highlight the text area */}
+            <div
+                className="absolute inset-0 z-[2]"
+                style={{
+                    background: "radial-gradient(circle at 20% 50%, rgba(0,0,0,0.5) 0%, rgba(0,0,0,0) 60%)"
+                }}
+            />
+
+            {/* ── Text content — sophisticated, airy typography ── */}
+            <motion.div
+                style={{ y: textY, opacity }}
+                className="relative z-10 w-[95%] max-w-7xl mx-auto px-8 md:px-14 pt-24 pb-24"
+            >
+                <div className="max-w-4xl flex flex-col items-start">
+                    {/* Minimalist Live Badge */}
+                    <motion.div
+                        initial={{ opacity: 0, filter: "blur(10px)", y: 10 }}
+                        animate={{ opacity: 1, filter: "blur(0px)", y: 0 }}
+                        transition={{ duration: 0.8, delay: 0.1, ease: [0.16, 1, 0.3, 1] }}
+                        className="mb-8"
+                    >
+                        <div className="inline-flex items-center gap-2.5 px-3 py-1.5 rounded-full bg-white/10 backdrop-blur-md border border-white/10">
+                            <span className="relative flex h-2 w-2">
+                                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span>
+                                <span className="relative inline-flex rounded-full h-2 w-2 bg-green-500"></span>
+                            </span>
+                            <span className="text-[13px] font-medium tracking-widest uppercase text-white/90" style={{ letterSpacing: "0.15em", fontFamily: "var(--font-pixel)" }}>
+                                Version 1.0 Live
+                            </span>
+                        </div>
+                    </motion.div>
+
+                    {/* Bold, Elegant Headline */}
+                    <motion.h1
+                        initial={{ opacity: 0, y: 30 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ duration: 1.2, delay: 0.2, ease: [0.16, 1, 0.3, 1] }}
+                        className="text-6xl md:text-8xl lg:text-[140px] font-normal leading-none tracking-tighter mb-8"
+                        style={{ color: "#ffffff", textShadow: "0 10px 40px rgba(0,0,0,0.3)", fontFamily: "var(--font-malinton)" }}
+                    >
+                        <span className="block mb-[0.1em]">Focus.</span>
+                        <span
+                            className="block text-transparent bg-clip-text bg-gradient-to-br from-white via-white to-white/30 py-[0.1em] -my-[0.1em] px-[0.05em] -mx-[0.05em]"
+                        >
+                            Redefined.
+                        </span>
+                    </motion.h1>
+
+                    {/* Refined Tagline */}
+                    <motion.p
+                        initial={{ opacity: 0, y: 20 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ duration: 1, delay: 0.4, ease: [0.16, 1, 0.3, 1] }}
+                        className="text-lg md:text-xl leading-relaxed mb-12 text-white/80 max-w-lg font-light"
+                    >
+                        The ultimate companion for deep work. <br className="hidden md:block" />
+                        Track your habits, monitor your tabs, and <br className="hidden md:block" />
+                        build unbreakable discipline seamlessly.
+                    </motion.p>
+
+                    {/* Premium CTA Buttons */}
+                    <motion.div
+                        initial={{ opacity: 0, y: 20 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ duration: 1, delay: 0.5, ease: [0.16, 1, 0.3, 1] }}
+                        className="flex flex-col sm:flex-row items-center gap-5"
+                    >
+                        <Link href="/login" className="w-full sm:w-auto">
+                            <button
+                                className="group relative w-full sm:w-auto px-8 py-4 bg-white text-black rounded-2xl text-lg tracking-wide overflow-hidden transition-all duration-300 hover:scale-[1.02] hover:shadow-[0_0_40px_rgba(255,255,255,0.3)]"
                                 style={{ fontFamily: "var(--font-malinton)" }}
                             >
-                                <span className="block relative">
-                                    STAY
-                                    <motion.span
-                                        animate={{ opacity: [0, 0.5, 0] }}
-                                        transition={{ duration: 0.2, repeat: Infinity, repeatDelay: 5 }}
-                                        className="absolute inset-0 text-red-500/30 translate-x-1"
-                                    >STAY</motion.span>
+                                {/* Subtle hover glow inside the button */}
+                                <div className="absolute inset-0 w-full h-full bg-gradient-to-r from-transparent via-black/5 to-transparent -translate-x-full group-hover:animate-[shimmer_1.5s_infinite]" />
+                                <span className="relative z-10 flex items-center justify-center gap-2">
+                                    Start Exploring
+                                    <svg className="w-4 h-4 transition-transform duration-300 group-hover:translate-x-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14 5l7 7m0 0l-7 7m7-7H3" />
+                                    </svg>
                                 </span>
-                                <span className="block text-transparent bg-clip-text bg-gradient-to-br from-foreground to-foreground/20">SHARP</span>
-                            </motion.h1>
-                            <motion.div
-                                style={{ y: y1 }}
-                                className="absolute -top-20 -right-10 text-[140px] font-bold opacity-[0.02] select-none pointer-events-none"
-                            >
-                                001
-                            </motion.div>
-                        </div>
-                    </div>
-
-                    <p className="text-xl md:text-2xl opacity-60 max-w-lg leading-relaxed font-medium">
-                        You think you're focused.
-                        Meow shows you the truth.
-
-                        Track your apps. Monitor your tabs.
-                        Build real discipline.                    </p>
-
-                    <div className="flex flex-wrap gap-6 items-center">
-                        <Link href="/dashboard">
-                            <button className="group relative px-10 py-5 bg-foreground text-background font-bold text-xl uppercase tracking-widest transition-all shadow-[4px_4px_0px_rgba(0,0,0,0.5)] dark:shadow-[4px_4px_0px_rgba(255,255,255,0.2)] hover:shadow-none hover:translate-x-[4px] hover:translate-y-[4px] active:scale-95 border border-foreground/10" style={{ fontFamily: "var(--font-malinton)" }}>
-                                TRY IT!
-                                <div className="absolute -top-1 -right-1 w-2 h-2 bg-red-500 animate-pulse" />
                             </button>
                         </Link>
 
-                        <div className="flex flex-col gap-1">
-                            <span className="text-[9px] uppercase font-bold tracking-widest opacity-30">ARCHITECT</span>
-                            <span className="text-xs font-bold opacity-60 flex items-center gap-2">
-                                by <a href="https://aninda-dev.vercel.app" target="_blank" rel="noopener noreferrer" className="hover:text-foreground transition-colors underline decoration-foreground/20 underline-offset-4">Aninda</a>
-                            </span>
-                        </div>
-                    </div>
-
-                </motion.div>
-
-                {/* Right Side: The "Core Unit" with Perspective HUD */}
-                <motion.div
-                    initial={{ opacity: 0, scale: 0.9, rotate: 5 }}
-                    animate={{ opacity: 1, scale: 1, rotate: 0 }}
-                    transition={{ duration: 1, delay: 0.2 }}
-                    className="relative flex items-center justify-center w-full -translate-y-24"
-                >
-                    {/* Circular Navigation/HUD elements */}
-                    <div className="absolute inset-0 flex items-center justify-center">
-                        <motion.div
-                            animate={{ rotate: 360 }}
-                            transition={{ duration: 20, repeat: Infinity, ease: "linear" }}
-                            className="w-full aspect-square border border-dashed border-foreground/[0.08] rounded-full scale-110"
-                        />
-                        <motion.div
-                            animate={{ rotate: -360 }}
-                            transition={{ duration: 30, repeat: Infinity, ease: "linear" }}
-                            className="w-[80%] aspect-square border border-foreground/[0.05] rounded-full scale-105"
-                        />
-                    </div>
-
-                    {/* 
-            THE CORE "MEOW" MODULE 
-            A heavy-glass effect enclosure
-          */}
-                    <motion.div
-                        className="relative z-10 w-full max-w-md aspect-square flex flex-col items-center justify-center p-16"
-                    >
-                        <motion.div
-                            style={{ y: y2 }}
-                            className="transform scale-[1.4]"
-                        >
-                        </motion.div>
+                        <Link href="#features" className="w-full sm:w-auto">
+                            <button className="w-full sm:w-auto px-8 py-4 rounded-2xl text-white/80 text-lg tracking-wide transition-all duration-300 border border-white/10 bg-white/5 hover:bg-white/10 hover:text-white backdrop-blur-sm" style={{ fontFamily: "var(--font-malinton)" }}>
+                                View Features
+                            </button>
+                        </Link>
                     </motion.div>
-
-                </motion.div>
-            </div>
-
-            {/* 
-        THE "PARALLAX GHOST" 
-        Massive text that sits behind everything
-      */}
-            <motion.div
-                style={{ x: ghostX, opacity }}
-                className="absolute bottom-10 left-0 text-[25vw] font-black opacity-[0.015] pointer-events-none whitespace-nowrap select-none leading-none tracking-tighter uppercase"
-            >
-                Meoww
+                </div>
             </motion.div>
+
+            {/* ── Elegant Scroll Indicator ── */}
+            <motion.div
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                transition={{ delay: 1.5, duration: 1 }}
+                className="absolute bottom-10 left-1/2 -translate-x-1/2 z-20 flex flex-col items-center gap-3"
+            >
+                <span className="text-[12px] uppercase tracking-[0.2em] text-white/40 font-medium" style={{ fontFamily: "var(--font-pixel)" }}>Scroll</span>
+                <div className="w-[1px] h-12 bg-white/10 overflow-hidden">
+                    <motion.div
+                        className="w-full h-1/2 bg-white/60"
+                        animate={{ y: [-24, 48] }}
+                        transition={{ duration: 1.5, repeat: Infinity, ease: "linear" }}
+                    />
+                </div>
+            </motion.div>
+            {/* ── Scroll-linked fade to background ── */}
+            <div
+                className="absolute bottom-0 left-0 right-0 h-64 z-[3] pointer-events-none"
+                style={{ background: "linear-gradient(to bottom, transparent 0%, var(--background) 100%)" }}
+            />
         </section>
     );
 }

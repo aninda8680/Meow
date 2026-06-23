@@ -2,8 +2,8 @@ import { NextResponse } from 'next/server';
 import { getToken } from 'next-auth/jwt';
 import type { NextRequest } from 'next/server';
 
-export async function middleware(req: NextRequest) {
-  console.log("[Middleware] Route:", req.nextUrl.pathname);
+export async function proxy(req: NextRequest) {
+  console.log("[Proxy] Route:", req.nextUrl.pathname);
   
   try {
     const token = await getToken({ 
@@ -12,10 +12,10 @@ export async function middleware(req: NextRequest) {
       secureCookie: process.env.NODE_ENV === 'production'
     });
     
-    console.log("[Middleware] Token decoded:", token ? "YES" : "NO");
+    console.log("[Proxy] Token decoded:", token ? "YES" : "NO");
     
     if (!token) {
-      console.log("[Middleware] Missing or invalid token! Rejecting access.");
+      console.log("[Proxy] Missing or invalid token! Rejecting access.");
       const url = req.nextUrl.clone();
       url.pathname = '/login';
       url.searchParams.set('callbackUrl', req.nextUrl.pathname);
@@ -24,7 +24,7 @@ export async function middleware(req: NextRequest) {
     
     return NextResponse.next();
   } catch (error) {
-    console.error("[Middleware] Error decoding token:", error);
+    console.error("[Proxy] Error decoding token:", error);
     const url = req.nextUrl.clone();
     url.pathname = '/login';
     return NextResponse.redirect(url);

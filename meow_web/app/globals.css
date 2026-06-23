@@ -9,7 +9,7 @@
 }
 
 @font-face {
-  font-family: 'Damaris';
+  font-family: 'Pixelify Sans';
   src: url('/fonts/DamarisDemo-1jvaB.ttf') format('truetype');
   font-weight: normal;
   font-style: normal;
@@ -33,7 +33,7 @@
 }
 
 :root {
-  --background: #ffffff;
+  --background: #EAE8E3;
   --background-rgb: 255, 255, 255;
   --foreground: #171717;
   --foreground-rgb: 23, 23, 23;
