@@ -26,6 +26,8 @@ export default function Home() {
   const [activeTaskId, setActiveTaskId] = useState<string | null>(null);
   const [showCompletion, setShowCompletion] = useState(false);
   const [lastSessionTime, setLastSessionTime] = useState(0);
+  // Ref to the sendModeChange fn exposed by Timer (used to push mode to master clock/notch)
+  const sendModeChangeRef = useRef<((mode: TimerMode) => void) | null>(null);
   const [widgets, setWidgets] = useState({
     appTracker: true,
     tabHistory: true,
@@ -114,8 +116,17 @@ export default function Home() {
 
   const handleModeChange = (newMode: TimerMode) => {
     setMode(newMode);
+    // Push mode to the master clock / notch if Electron is connected
+    if (sendModeChangeRef.current) {
+      sendModeChangeRef.current(newMode);
+    }
     if (session) saveSettingsToApi({ mode: newMode, widgets });
   };
+
+  // Capture the sendModeChange fn from Timer
+  const handleSendModeChange = useCallback((fn: (mode: TimerMode) => void) => {
+    sendModeChangeRef.current = fn;
+  }, []);
 
   const toggleAllWidgets = () => {
     const anyOn = widgets.tasks || widgets.appTracker || widgets.tabHistory || widgets.quickNotes || widgets.focusReport;
@@ -260,6 +271,7 @@ export default function Home() {
           <Timer
             mode={mode}
             onModeChange={setMode}
+            onSendModeChange={handleSendModeChange}
             onStateChange={setTimerState}
             onComplete={handleTimerComplete}
             onSessionEnd={handleSessionEnd}

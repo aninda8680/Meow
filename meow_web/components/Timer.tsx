@@ -8,7 +8,10 @@ type TimerMode = "countup" | "countdown";
 
 interface TimerProps {
     mode: TimerMode;
+    // Called when the Master Clock pushes a mode change (notch → website)
     onModeChange: (mode: TimerMode) => void;
+    // Called when the user clicks the mode toggle on the website (website → notch)
+    onSendModeChange?: (sendFn: (mode: TimerMode) => void) => void;
     onStateChange?: (state: TimerState) => void;
     onComplete?: () => void;
     onSessionEnd?: (seconds: number) => void;
@@ -38,6 +41,7 @@ const RestartIcon = () => (
 export default function Timer({
     mode,
     onModeChange,
+    onSendModeChange,
     onStateChange,
     onComplete,
     onSessionEnd
@@ -48,41 +52,61 @@ export default function Timer({
     const [duration, setDuration] = useState<number>(1500); // Default 25m
     const [customMinutes, setCustomMinutes] = useState<string>("25");
     const [ws, setWs] = useState<WebSocket | null>(null);
+    const wsRef = useRef<WebSocket | null>(null);
+    const modeRef = useRef<TimerMode>(mode);
 
+    // Keep modeRef in sync so onmessage closure always sees the latest mode
+    useEffect(() => {
+        modeRef.current = mode;
+    }, [mode]);
+
+    // WebSocket setup — runs ONCE on mount, no mode/onModeChange in deps
     useEffect(() => {
         setIsMounted(true);
-        
-        const socket = new WebSocket("ws://localhost:5263");
-        socket.onopen = () => {
-            console.log("Timer connected to Master Clock");
-            setWs(socket);
-        };
-        
-        socket.onmessage = (event) => {
-            try {
-                const msg = JSON.parse(event.data);
-                if (msg.type === 'TIMER_STATE') {
-                    const state = msg.data;
-                    setTime(state.seconds);
-                    setTimerState(state.isPaused ? (state.seconds === 0 ? "idle" : "paused") : "running");
-                    
-                    const newMode = state.mode === 'pomodoro' ? 'countdown' : 'countup';
-                    if (newMode === 'countdown') {
-                        setDuration(state.pomoDuration);
+
+        const connect = () => {
+            const socket = new WebSocket("ws://localhost:5263");
+
+            socket.onopen = () => {
+                console.log("Timer connected to Master Clock");
+                wsRef.current = socket;
+                setWs(socket);
+            };
+
+            socket.onmessage = (event) => {
+                try {
+                    const msg = JSON.parse(event.data);
+                    if (msg.type === 'TIMER_STATE') {
+                        const state = msg.data;
+                        setTime(state.seconds);
+                        setTimerState(state.isPaused ? (state.seconds === 0 ? "idle" : "paused") : "running");
+
+                        const newMode = state.mode === 'pomodoro' ? 'countdown' : 'countup';
+                        if (newMode === 'countdown') {
+                            setDuration(state.pomoDuration);
+                        }
+                        // Use modeRef to avoid stale closure — no WS recreation needed
+                        if (modeRef.current !== newMode) {
+                            onModeChange(newMode);
+                        }
                     }
-                    if (mode !== newMode) {
-                        onModeChange(newMode);
-                    }
+                } catch (e) {
+                    console.error("Timer WebSocket error:", e);
                 }
-            } catch (e) {
-                console.error("Timer WebSocket error:", e);
-            }
+            };
+
+            socket.onclose = () => {
+                wsRef.current = null;
+                setWs(null);
+            };
+
+            return socket;
         };
 
-        socket.onclose = () => setWs(null);
-
+        const socket = connect();
         return () => socket.close();
-    }, [mode, onModeChange]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, []); // Intentionally empty — we use refs for live values
 
     // Sync time when mode changes ONLY if idle
     useEffect(() => {
@@ -96,10 +120,29 @@ export default function Timer({
     }, [mode, duration, timerState, isMounted]);
 
     const sendAction = (action: any) => {
-        if (ws && ws.readyState === WebSocket.OPEN) {
-            ws.send(JSON.stringify({ type: 'TIMER_ACTION', action }));
+        const sock = wsRef.current;
+        if (sock && sock.readyState === WebSocket.OPEN) {
+            sock.send(JSON.stringify({ type: 'TIMER_ACTION', action }));
         }
     };
+
+    // Expose sendModeChange upward so the dashboard toggle can reach the master clock
+    useEffect(() => {
+        if (onSendModeChange) {
+            onSendModeChange((newMode: TimerMode) => {
+                const masterMode = newMode === 'countdown' ? 'pomodoro' : 'stopwatch';
+                const sock = wsRef.current;
+                if (sock && sock.readyState === WebSocket.OPEN) {
+                    sock.send(JSON.stringify({
+                        type: 'TIMER_ACTION',
+                        action: { type: 'SET_MODE', mode: masterMode }
+                    }));
+                }
+                // Local time reset regardless of Electron state
+                if (newMode === 'countup') setTime(0);
+            });
+        }
+    }, [onSendModeChange]);
 
     const start = () => {
         if (timerState === "running") return;
