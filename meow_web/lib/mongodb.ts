@@ -31,6 +31,7 @@ async function dbConnect() {
     };
 
     cached.promise = mongoose.connect(MONGODB_URI, opts).then((mongoose) => {
+      console.log("✅ MongoDB connected successfully to:", MONGODB_URI.split("@")[1]?.split("/")[0] ?? "unknown host");
       return mongoose;
     });
   }

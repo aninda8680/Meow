@@ -60,7 +60,7 @@ export default function Timer({
         modeRef.current = mode;
     }, [mode]);
 
-    // WebSocket setup — runs ONCE on mount, no mode/onModeChange in deps
+    // WebSocket setup — runs ONCE on mount
     useEffect(() => {
         setIsMounted(true);
 
@@ -85,7 +85,6 @@ export default function Timer({
                         if (newMode === 'countdown') {
                             setDuration(state.pomoDuration);
                         }
-                        // Use modeRef to avoid stale closure — no WS recreation needed
                         if (modeRef.current !== newMode) {
                             onModeChange(newMode);
                         }
@@ -106,9 +105,50 @@ export default function Timer({
         const socket = connect();
         return () => socket.close();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, []); // Intentionally empty — we use refs for live values
+    }, []);
 
-    // Sync time when mode changes ONLY if idle
+    // ─── Local fallback interval (used when Electron is NOT connected) ───────
+    const localIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+    const durationRef = useRef<number>(1500);
+    useEffect(() => { durationRef.current = duration; }, [duration]);
+
+    const isConnected = () => wsRef.current?.readyState === WebSocket.OPEN;
+
+    const stopLocalInterval = () => {
+        if (localIntervalRef.current) {
+            clearInterval(localIntervalRef.current);
+            localIntervalRef.current = null;
+        }
+    };
+
+    const startLocalInterval = () => {
+        stopLocalInterval();
+        localIntervalRef.current = setInterval(() => {
+            if (modeRef.current === "countup") {
+                setTime(t => t + 1);
+            } else {
+                setTime(t => {
+                    if (t <= 1) {
+                        stopLocalInterval();
+                        setTimerState("idle");
+                        return 0;
+                    }
+                    return t - 1;
+                });
+            }
+        }, 1000);
+    };
+
+    // When Electron connects, stop the local interval — master clock takes over
+    useEffect(() => {
+        if (ws) stopLocalInterval();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [ws]);
+
+    // Cleanup on unmount
+    useEffect(() => () => stopLocalInterval(), []);
+
+    // Sync time when mode changes and timer is idle
     useEffect(() => {
         if (timerState === "idle" && isMounted) {
             if (mode === "countup") {
@@ -138,7 +178,6 @@ export default function Timer({
                         action: { type: 'SET_MODE', mode: masterMode }
                     }));
                 }
-                // Local time reset regardless of Electron state
                 if (newMode === 'countup') setTime(0);
             });
         }
@@ -146,20 +185,44 @@ export default function Timer({
 
     const start = () => {
         if (timerState === "running") return;
-        sendAction({ type: 'TOGGLE_PLAY' });
+        if (isConnected()) {
+            sendAction({ type: 'TOGGLE_PLAY' });
+        } else {
+            // Electron offline — run locally
+            setTimerState("running");
+            startLocalInterval();
+        }
     };
 
     const pause = () => {
-        sendAction({ type: 'TOGGLE_PLAY' });
+        if (isConnected()) {
+            sendAction({ type: 'TOGGLE_PLAY' });
+        } else {
+            stopLocalInterval();
+            setTimerState("paused");
+        }
     };
 
     const restart = () => {
-        sendAction({ type: 'RESET' });
+        if (isConnected()) {
+            sendAction({ type: 'RESET' });
+        } else {
+            stopLocalInterval();
+            setTimerState("idle");
+            setTime(modeRef.current === "countup" ? 0 : durationRef.current);
+        }
     };
 
     const setCountdownDuration = (mins: number) => {
         const secs = mins * 60;
-        sendAction({ type: 'SET_MODE', mode: 'pomodoro', pomoDuration: secs });
+        if (isConnected()) {
+            sendAction({ type: 'SET_MODE', mode: 'pomodoro', pomoDuration: secs });
+        } else {
+            setDuration(secs);
+            setTime(secs);
+            stopLocalInterval();
+            setTimerState("idle");
+        }
     };
 
     const handleCustomSubmit = (e: React.FormEvent) => {
