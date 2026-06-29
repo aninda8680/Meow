@@ -11,9 +11,9 @@ const XIcon = ({ size = 18 }: { size?: number }) => (
 
 export default function LandingFooter() {
     return (
-        <footer className="py-20 px-6 bg-background relative overflow-hidden">
-            <div className="absolute inset-0 opacity-[0.02] pointer-events-none"
-                style={{ backgroundImage: 'radial-gradient(var(--foreground) 1px, transparent 0)', backgroundSize: '32px 32px' }} />
+        <footer className="py-20 px-6 bg-black text-white relative overflow-hidden">
+            <div className="absolute inset-0 opacity-[0.05] pointer-events-none"
+                style={{ backgroundImage: 'radial-gradient(white 1px, transparent 0)', backgroundSize: '32px 32px' }} />
 
             {/* Decorative Cat Mascot */}
             <div className="absolute bottom-0 left-[50%] md:left-[45%] -translate-x-1/2 pointer-events-none z-0 opacity-90 drop-shadow-[0_0_15px_rgba(255,255,255,0.1)]">
@@ -53,19 +53,19 @@ export default function LandingFooter() {
                                 <a href="https://aninda.tech" target="_blank" rel="noreferrer" className="inline-flex items-center gap-1.5 w-fit group/name">
                                     <span className="text-sm font-bold relative">
                                         Aninda Debta
-                                        <span className="absolute -bottom-0.5 left-0 w-full h-[1.5px] bg-foreground origin-left scale-x-0 group-hover/name:scale-x-100 transition-transform duration-300 ease-out" />
+                                        <span className="absolute -bottom-0.5 left-0 w-full h-[1.5px] bg-white origin-left scale-x-0 group-hover/name:scale-x-100 transition-transform duration-300 ease-out" />
                                     </span>
                                     <ArrowUpRight size={14} className="opacity-40 group-hover/name:opacity-100 group-hover/name:-translate-y-[2px] group-hover/name:translate-x-[2px] transition-all duration-300 ease-out" />
                                 </a>
                                 
                                 <div className="flex gap-2">
-                                    <a href="https://github.com/aninda8680" target="_blank" rel="noreferrer" className="w-8 h-8 rounded-lg bg-foreground/[0.05] flex items-center justify-center hover:bg-foreground hover:text-background hover:-translate-y-1 transition-all shadow-sm">
+                                    <a href="https://github.com/aninda8680" target="_blank" rel="noreferrer" className="w-8 h-8 rounded-lg bg-white/5 flex items-center justify-center hover:bg-white hover:text-black hover:-translate-y-1 transition-all shadow-sm">
                                         <Github size={14} />
                                     </a>
-                                    <a href="https://x.com/hii_aninda" target="_blank" rel="noreferrer" className="w-8 h-8 rounded-lg bg-foreground/[0.05] flex items-center justify-center hover:bg-foreground hover:text-background hover:-translate-y-1 transition-all shadow-sm">
+                                    <a href="https://x.com/hii_aninda" target="_blank" rel="noreferrer" className="w-8 h-8 rounded-lg bg-white/5 flex items-center justify-center hover:bg-white hover:text-black hover:-translate-y-1 transition-all shadow-sm">
                                         <XIcon size={12} />
                                     </a>
-                                    <a href="https://www.linkedin.com/in/aninda01" target="_blank" rel="noreferrer" className="w-8 h-8 rounded-lg bg-foreground/[0.05] flex items-center justify-center hover:bg-foreground hover:text-background hover:-translate-y-1 transition-all shadow-sm">
+                                    <a href="https://www.linkedin.com/in/aninda01" target="_blank" rel="noreferrer" className="w-8 h-8 rounded-lg bg-white/5 flex items-center justify-center hover:bg-white hover:text-black hover:-translate-y-1 transition-all shadow-sm">
                                         <Linkedin size={14} />
                                     </a>
                                 </div>
@@ -76,19 +76,19 @@ export default function LandingFooter() {
                                 <a href="https://atanusaha.tech" target="_blank" rel="noreferrer" className="inline-flex items-center gap-1.5 w-fit group/name">
                                     <span className="text-sm font-bold relative">
                                         Atanu Saha
-                                        <span className="absolute -bottom-0.5 left-0 w-full h-[1.5px] bg-foreground origin-left scale-x-0 group-hover/name:scale-x-100 transition-transform duration-300 ease-out" />
+                                        <span className="absolute -bottom-0.5 left-0 w-full h-[1.5px] bg-white origin-left scale-x-0 group-hover/name:scale-x-100 transition-transform duration-300 ease-out" />
                                     </span>
                                     <ArrowUpRight size={14} className="opacity-40 group-hover/name:opacity-100 group-hover/name:-translate-y-[2px] group-hover/name:translate-x-[2px] transition-all duration-300 ease-out" />
                                 </a>
                                 
                                 <div className="flex gap-2">
-                                    <a href="https://github.com/Atanu2k4" target="_blank" rel="noreferrer" className="w-8 h-8 rounded-lg bg-foreground/[0.05] flex items-center justify-center hover:bg-foreground hover:text-background hover:-translate-y-1 transition-all shadow-sm">
+                                    <a href="https://github.com/Atanu2k4" target="_blank" rel="noreferrer" className="w-8 h-8 rounded-lg bg-white/5 flex items-center justify-center hover:bg-white hover:text-black hover:-translate-y-1 transition-all shadow-sm">
                                         <Github size={14} />
                                     </a>
-                                    <a href="https://x.com/atanu__07" target="_blank" rel="noreferrer" className="w-8 h-8 rounded-lg bg-foreground/[0.05] flex items-center justify-center hover:bg-foreground hover:text-background hover:-translate-y-1 transition-all shadow-sm">
+                                    <a href="https://x.com/atanu__07" target="_blank" rel="noreferrer" className="w-8 h-8 rounded-lg bg-white/5 flex items-center justify-center hover:bg-white hover:text-black hover:-translate-y-1 transition-all shadow-sm">
                                         <XIcon size={12} />
                                     </a>
-                                    <a href="https://www.linkedin.com/in/atanusaha07/" target="_blank" rel="noreferrer" className="w-8 h-8 rounded-lg bg-foreground/[0.05] flex items-center justify-center hover:bg-foreground hover:text-background hover:-translate-y-1 transition-all shadow-sm">
+                                    <a href="https://www.linkedin.com/in/atanusaha07/" target="_blank" rel="noreferrer" className="w-8 h-8 rounded-lg bg-white/5 flex items-center justify-center hover:bg-white hover:text-black hover:-translate-y-1 transition-all shadow-sm">
                                         <Linkedin size={14} />
                                     </a>
                                 </div>
@@ -107,7 +107,7 @@ export default function LandingFooter() {
                     </div>
                 </div>
 
-                <div className="pt-10 border-t border-foreground/[0.05] flex flex-col md:flex-row justify-between items-center gap-6">
+                <div className="pt-10 border-t border-white/10 flex flex-col md:flex-row justify-between items-center gap-6">
                     <div className="flex gap-8 text-[11px] font-medium uppercase tracking-widest opacity-30" style={{ fontFamily: "var(--font-pixel)" }}>
                         <a href="#" className="hover:opacity-100 transition-opacity">Privacy_Policy</a>
                         <a href="#" className="hover:opacity-100 transition-opacity">Terms_of_Service</a>

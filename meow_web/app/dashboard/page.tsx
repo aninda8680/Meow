@@ -5,7 +5,6 @@ import { motion, AnimatePresence } from "framer-motion";
 
 import Timer from "@/components/Timer";
 import { SettingsButton } from "@/components/SettingsButton";
-import TaskSection from "@/components/widgets/TaskSection";
 import AppTracker from "@/components/widgets/AppTracker";
 import TabTracker from "@/components/widgets/TabTracker";
 import { ReportWidget } from "@/components/widgets/ReportWidget";
@@ -23,7 +22,6 @@ export default function Home() {
   const [timerState, setTimerState] = useState<TimerState>("idle");
   const [mode, setMode] = useState<TimerMode>("countup");
   const [userInfo, setUserInfo] = useState({ name: "", avatar: "users-1.svg" });
-  const [activeTaskId, setActiveTaskId] = useState<string | null>(null);
   const [showCompletion, setShowCompletion] = useState(false);
   const [lastSessionTime, setLastSessionTime] = useState(0);
   // Ref to the sendModeChange fn exposed by Timer (used to push mode to master clock/notch)
@@ -33,7 +31,6 @@ export default function Home() {
     tabHistory: true,
     quickNotes: true,
     focusReport: true,
-    tasks: true,
   });
 
   const [isUIVisible, setIsUIVisible] = useState(true);
@@ -129,10 +126,9 @@ export default function Home() {
   }, []);
 
   const toggleAllWidgets = () => {
-    const anyOn = widgets.tasks || widgets.appTracker || widgets.tabHistory || widgets.quickNotes || widgets.focusReport;
+    const anyOn = widgets.appTracker || widgets.tabHistory || widgets.quickNotes || widgets.focusReport;
     const newState = !anyOn;
     const newWidgets = {
-      tasks: newState,
       appTracker: newState,
       tabHistory: newState,
       quickNotes: newState,
@@ -150,12 +146,7 @@ export default function Home() {
 
   const handleSessionEnd = useCallback((duration: number) => {
     setLastSessionTime(duration);
-    if (activeTaskId) {
-      window.dispatchEvent(new CustomEvent("meow-focus-update", {
-        detail: { taskId: activeTaskId, duration }
-      }));
-    }
-  }, [activeTaskId]);
+  }, []);
 
   const handleLogout = async () => {
     await signOut({ callbackUrl: '/' });
@@ -182,7 +173,7 @@ export default function Home() {
                 className="p-3 rounded-xl hover:bg-foreground/5 active:scale-90 transition-all group/btn"
                 title="Toggle All Widgets"
               >
-                {widgets.tasks || widgets.appTracker || widgets.tabHistory || widgets.quickNotes || widgets.focusReport ? (
+                {widgets.appTracker || widgets.tabHistory || widgets.quickNotes || widgets.focusReport ? (
                   <EyeOff className="w-5 h-5 text-foreground/70 group-hover/btn:text-foreground transition-all duration-300" />
                 ) : (
                   <LayoutGrid className="w-5 h-5 text-foreground/70 group-hover/btn:text-foreground transition-all duration-300" />
@@ -227,22 +218,6 @@ export default function Home() {
         </AnimatePresence>
 
         <AnimatePresence>
-          {widgets.tasks && (
-            <motion.div 
-              initial={{ opacity: 0, x: 20 }} 
-              animate={{ opacity: 1, x: 0 }} 
-              exit={{ opacity: 0, x: 20 }} 
-              className="absolute top-24 right-6 pointer-events-auto w-72 max-h-[70vh] overflow-y-auto custom-scrollbar"
-            >
-              <TaskSection
-                activeTaskId={activeTaskId}
-                onSetActiveTask={setActiveTaskId}
-              />
-            </motion.div>
-          )}
-        </AnimatePresence>
-
-        <AnimatePresence>
           {widgets.tabHistory && (
             <motion.div 
               initial={{ opacity: 0, x: 20 }} 
@@ -282,15 +257,6 @@ export default function Home() {
         <div className="lg:hidden flex flex-col gap-4 w-full max-w-sm mt-12">
           <AnimatePresence mode="wait">
             {widgets.appTracker && <AppTracker key="app-tracker-mobile" />}
-          </AnimatePresence>
-          <AnimatePresence mode="wait">
-            {widgets.tasks && (
-              <TaskSection
-                key="task-section-mobile"
-                activeTaskId={activeTaskId}
-                onSetActiveTask={setActiveTaskId}
-              />
-            )}
           </AnimatePresence>
           <AnimatePresence mode="wait">
             {widgets.quickNotes && <QuickNotes key="quick-notes-mobile" />}

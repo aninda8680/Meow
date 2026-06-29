@@ -145,7 +145,7 @@ export default function LandingHero() {
             {/* ── Scroll-linked fade to background ── */}
             <div
                 className="absolute bottom-0 left-0 right-0 h-64 z-[3] pointer-events-none"
-                style={{ background: "linear-gradient(to bottom, transparent 0%, var(--background) 100%)" }}
+                style={{ background: "linear-gradient(to bottom, transparent 0%, #000 100%)" }}
             />
         </section>
     );
