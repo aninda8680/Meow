@@ -6,6 +6,7 @@ import { useMemo, useState } from "react";
 import Link from "next/link";
 import { ArrowLeft, Target, TrendingUp, TrendingDown, Sparkles, BrainCircuit, Activity, Clock } from "lucide-react";
 import { motion } from "framer-motion";
+import { ReportSidebar } from "@/components/layouts/ReportSidebar";
 
 export default function ReportPage() {
   const { stats } = useSystemTracker();
@@ -79,15 +80,14 @@ export default function ReportPage() {
   };
 
   return (
-    <div className="min-h-screen bg-background text-foreground bg-[radial-gradient(ellipse_80%_80%_at_50%_-20%,rgba(120,119,198,0.1),rgba(255,255,255,0))] font-[family-name:var(--font-malinton)] p-6 lg:p-12">
-        <div className="max-w-4xl mx-auto space-y-8">
-            {/* Header */}
-            <div className="flex items-center justify-between">
-                <Link href="/dashboard" className="flex items-center gap-2 text-foreground/50 hover:text-foreground transition-colors group">
-                    <ArrowLeft size={16} className="group-hover:-translate-x-1 transition-transform" />
-                    <span className="uppercase text-[10px] font-bold tracking-widest">Back to Hub</span>
-                </Link>
-                <div className="flex bg-foreground/5 rounded-full p-1 border border-foreground/10">
+    <div className="min-h-screen bg-background text-foreground bg-[radial-gradient(ellipse_80%_80%_at_50%_-20%,rgba(120,119,198,0.1),rgba(255,255,255,0))] font-[family-name:var(--font-malinton)] flex flex-col md:flex-row">
+        <ReportSidebar />
+        
+        <div className="flex-1 p-6 lg:p-12 overflow-y-auto max-h-screen custom-scrollbar">
+            <div className="max-w-4xl mx-auto space-y-8">
+                {/* Header */}
+                <div className="flex items-center justify-end">
+                    <div className="flex bg-foreground/5 rounded-full p-1 border border-foreground/10">
                     <button 
                         onClick={() => setReportType('daily')}
                         className={`px-4 py-1.5 rounded-full text-xs font-bold uppercase tracking-wider transition-all ${reportType === 'daily' ? 'bg-foreground text-background' : 'text-foreground/50 hover:text-foreground/80'}`}
@@ -219,6 +219,7 @@ export default function ReportPage() {
                         ))}
                     </div>
                 </motion.div>
+                </div>
             </div>
         </div>
     </div>

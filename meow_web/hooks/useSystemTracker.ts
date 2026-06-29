@@ -35,6 +35,7 @@ export const globalSyncedTabIds = new Set<number>();
 const listeners = new Set<() => void>();
 let reconnectTimeout: NodeJS.Timeout | null = null;
 let isConnecting = false;
+let isPollingExtension = false;
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
@@ -56,6 +57,37 @@ function initGlobalSocket() {
         globalStatus = 'connected';
         console.log("✅ Connected to Meow System Tracker");
         notifyListeners();
+
+        // Start polling the browser extension for tab data if not already doing so
+        if (!isPollingExtension && typeof window !== 'undefined') {
+            isPollingExtension = true;
+            const requestData = () => window.postMessage({ type: 'MEOW_GET_DATA' }, '*');
+            requestData();
+            setInterval(requestData, 1000);
+            window.addEventListener('message', (event) => {
+                if (event.data?.type !== 'MEOW_DATA_RESPONSE') return;
+                const sessions: Array<{ id: number; domain: string; title: string; duration: number }> =
+                    event.data.payload?.sessions || [];
+                sessions.forEach((s) => {
+                    if (!globalSyncedTabIds.has(s.id)) {
+                        globalSyncedTabIds.add(s.id);
+                        
+                        // Manually send TAB_LOG to backend
+                        if (globalSocket && globalSocket.readyState === WebSocket.OPEN) {
+                            globalSocket.send(
+                                JSON.stringify({
+                                    type: "TAB_LOG",
+                                    domain: s.domain,
+                                    title: s.title,
+                                    duration: s.duration,
+                                    id: s.id,
+                                })
+                            );
+                        }
+                    }
+                });
+            });
+        }
     };
 
     globalSocket.onmessage = (event) => {

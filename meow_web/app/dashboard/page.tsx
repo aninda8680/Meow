@@ -5,19 +5,19 @@ import { motion, AnimatePresence } from "framer-motion";
 
 import Timer from "@/components/Timer";
 import { SettingsButton } from "@/components/SettingsButton";
-import AppTracker from "@/components/widgets/AppTracker";
-import TabTracker from "@/components/widgets/TabTracker";
+
 import { ReportWidget } from "@/components/widgets/ReportWidget";
 
-import QuickNotes from "@/components/widgets/QuickNotes";
 import { LogOut, LayoutGrid, EyeOff, Monitor, StickyNote, Globe, Target } from "lucide-react";
 import { useSession, signOut } from "next-auth/react";
+import { useSystemTracker, globalSyncedTabIds } from "@/hooks/useSystemTracker";
 import CompletionToast from "@/components/CompletionToast";
 
 type TimerState = "idle" | "running" | "paused";
 type TimerMode = "countup" | "countdown";
 
 export default function Home() {
+  const { status, currentApp, liveCurrentDuration, logTabActivity } = useSystemTracker();
   const { data: session } = useSession();
   const [timerState, setTimerState] = useState<TimerState>("idle");
   const [mode, setMode] = useState<TimerMode>("countup");
@@ -27,9 +27,6 @@ export default function Home() {
   // Ref to the sendModeChange fn exposed by Timer (used to push mode to master clock/notch)
   const sendModeChangeRef = useRef<((mode: TimerMode) => void) | null>(null);
   const [widgets, setWidgets] = useState({
-    appTracker: true,
-    tabHistory: true,
-    quickNotes: true,
     focusReport: true,
   });
 
@@ -44,6 +41,23 @@ export default function Home() {
     uiTimeoutRef.current = setTimeout(() => {
       setIsUIVisible(false);
     }, 2500); // Hide UI after 2.5s of inactivity
+  }, []);
+
+  // Hide UI after 2.5s of inactivity
+  useEffect(() => {
+    let lastMove = Date.now();
+    const handleMouseMove = () => {
+      lastMove = Date.now();
+      setIsUIVisible(true);
+    };
+    window.addEventListener("mousemove", handleMouseMove);
+    const interval = setInterval(() => {
+      if (Date.now() - lastMove > 2500) setIsUIVisible(false);
+    }, 500);
+    return () => {
+      window.removeEventListener("mousemove", handleMouseMove);
+      clearInterval(interval);
+    };
   }, []);
 
   useEffect(() => {
@@ -126,12 +140,9 @@ export default function Home() {
   }, []);
 
   const toggleAllWidgets = () => {
-    const anyOn = widgets.appTracker || widgets.tabHistory || widgets.quickNotes || widgets.focusReport;
+    const anyOn = widgets.focusReport;
     const newState = !anyOn;
     const newWidgets = {
-      appTracker: newState,
-      tabHistory: newState,
-      quickNotes: newState,
       focusReport: newState,
     };
     setWidgets(newWidgets);
@@ -173,7 +184,7 @@ export default function Home() {
                 className="p-3 rounded-xl hover:bg-foreground/5 active:scale-90 transition-all group/btn"
                 title="Toggle All Widgets"
               >
-                {widgets.appTracker || widgets.tabHistory || widgets.quickNotes || widgets.focusReport ? (
+                {widgets.focusReport ? (
                   <EyeOff className="w-5 h-5 text-foreground/70 group-hover/btn:text-foreground transition-all duration-300" />
                 ) : (
                   <LayoutGrid className="w-5 h-5 text-foreground/70 group-hover/btn:text-foreground transition-all duration-300" />
@@ -191,44 +202,7 @@ export default function Home() {
 
       {/* ═══════════ DESKTOP WIDGETS (Direct on Dashboard) ═══════════ */}
       <div className="hidden lg:block pointer-events-none fixed inset-0 z-10">
-        <AnimatePresence>
-          {widgets.appTracker && (
-            <motion.div 
-              initial={{ opacity: 0, x: -20 }} 
-              animate={{ opacity: 1, x: 0 }} 
-              exit={{ opacity: 0, x: -20 }} 
-              className="absolute top-24 left-6 pointer-events-auto w-72 max-h-[70vh] overflow-y-auto custom-scrollbar"
-            >
-              <AppTracker />
-            </motion.div>
-          )}
-        </AnimatePresence>
 
-        <AnimatePresence>
-          {widgets.quickNotes && (
-            <motion.div 
-              initial={{ opacity: 0, x: -20 }} 
-              animate={{ opacity: 1, x: 0 }} 
-              exit={{ opacity: 0, x: -20 }} 
-              className="absolute bottom-32 left-6 pointer-events-auto w-72 max-h-[70vh] overflow-y-auto custom-scrollbar"
-            >
-              <QuickNotes />
-            </motion.div>
-          )}
-        </AnimatePresence>
-
-        <AnimatePresence>
-          {widgets.tabHistory && (
-            <motion.div 
-              initial={{ opacity: 0, x: 20 }} 
-              animate={{ opacity: 1, x: 0 }} 
-              exit={{ opacity: 0, x: 20 }} 
-              className="absolute bottom-32 right-6 pointer-events-auto w-72 max-h-[70vh] overflow-y-auto custom-scrollbar"
-            >
-              <TabTracker />
-            </motion.div>
-          )}
-        </AnimatePresence>
       </div>
 
       {/* ═══════════ CENTER HERO ═══════════ */}
@@ -255,15 +229,6 @@ export default function Home() {
 
         {/* ═══════════ MOBILE WIDGETS (stacked below hero) ═══════════ */}
         <div className="lg:hidden flex flex-col gap-4 w-full max-w-sm mt-12">
-          <AnimatePresence mode="wait">
-            {widgets.appTracker && <AppTracker key="app-tracker-mobile" />}
-          </AnimatePresence>
-          <AnimatePresence mode="wait">
-            {widgets.quickNotes && <QuickNotes key="quick-notes-mobile" />}
-          </AnimatePresence>
-          <AnimatePresence mode="wait">
-            {widgets.tabHistory && <TabTracker key="tab-tracker-mobile" />}
-          </AnimatePresence>
         </div>
 
         {/* User Profile Hook */}
@@ -294,6 +259,27 @@ export default function Home() {
               </button>
             </div>
           </div>
+        </motion.div>
+
+        {/* Top Right System Status */}
+        <motion.div
+          initial={{ opacity: 0, x: 20 }}
+          animate={{ opacity: 1, x: 0 }}
+          className="fixed top-6 right-6 z-50 flex flex-col items-end gap-1 select-none pointer-events-auto"
+          style={{ fontFamily: 'var(--font-source-code)' }}
+        >
+          <span className="text-[9px] uppercase tracking-widest font-semibold opacity-30">Sync Status</span>
+          <span className={`text-[9px] uppercase font-bold tracking-wider ${status === 'connected' ? 'text-green-500' : 'text-red-500/80'}`}>
+            {status === 'connected' ? '● System Connected' : '○ System Offline'}
+          </span>
+          {currentApp && (
+            <div className="flex flex-col items-end mt-4">
+              <span className="text-[9px] uppercase tracking-widest font-semibold opacity-30">Focusing On</span>
+              <span className="text-[10px] font-bold tracking-wider mt-1">{currentApp.app}</span>
+              <span className="text-[9px] opacity-40 max-w-[200px] truncate">{currentApp.title}</span>
+              <span className="text-[9px] font-bold text-green-500 mt-1">● {Math.floor(liveCurrentDuration / 60)}m {liveCurrentDuration % 60}s</span>
+            </div>
+          )}
         </motion.div>
       </div>
 

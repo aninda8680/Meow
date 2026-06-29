@@ -17,10 +17,6 @@ export default function SettingsPage() {
     const [username, setUsername] = React.useState("");
     const [selectedAvatar, setSelectedAvatar] = React.useState("users-1.svg");
     const [widgets, setWidgets] = React.useState({
-        tasks: true,
-        appTracker: true,
-        tabHistory: true,
-        quickNotes: true,
         focusReport: true,
     });
 
@@ -206,10 +202,6 @@ export default function SettingsPage() {
                     <h3 className="text-[10px] uppercase tracking-[0.25em] font-extrabold opacity-40 mb-8 px-1">Subsystem Matrix</h3>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                         {[
-                            { id: 'appTracker', label: 'App Intelligence', desc: 'Monitor active system applications' },
-                            { id: 'tasks', label: 'Mission Log', desc: 'Enable focus task management' },
-                            { id: 'tabHistory', label: 'Domain Tracking', desc: 'Sync browser activity in real-time' },
-                            { id: 'quickNotes', label: 'Quick Notes', desc: 'Minimal jot-it-down scratchpad' },
                             { id: 'focusReport', label: 'Focus Report', desc: 'Productivity score & breakdown strip' },
                         ].map((item) => (
                             <button

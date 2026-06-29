@@ -18,6 +18,11 @@ const vastShadow = localFont({
   variable: "--font-vast-shadow",
 });
 
+const sourceCodePro = localFont({
+  src: "../public/Fonts/SourceCodePro-VariableFont_wght.ttf",
+  variable: "--font-source-code",
+});
+
 export const metadata: Metadata = {
   title: "Meow - Let's Focus!",
   description: "Let's focus on our goals!",
@@ -33,7 +38,7 @@ export default function RootLayout({
   return (
     <html lang="en" suppressHydrationWarning>
       <body
-        className={`${geistSans.variable} ${geistMono.variable} ${vastShadow.variable} antialiased`}
+        className={`${geistSans.variable} ${geistMono.variable} ${vastShadow.variable} ${sourceCodePro.variable} antialiased`}
         suppressHydrationWarning
       >
         <Providers>

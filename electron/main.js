@@ -177,13 +177,13 @@ function startTrackerServer() {
   const serverApp = express();
   serverApp.use(cors());
 
-  serverApp.get("/stats", (req, res) => {
-    res.json(getStats());
+  serverApp.get("/stats", async (req, res) => {
+    res.json(await getStats());
   });
 
-  serverApp.post("/clear", (req, res) => {
-    clearDB();
-    trackerBroadcast({ type: 'stats', data: getStats() });
+  serverApp.post("/clear", async (req, res) => {
+    await clearDB();
+    trackerBroadcast({ type: 'stats', data: await getStats() });
     res.json({ success: true });
   });
 
@@ -192,9 +192,9 @@ function startTrackerServer() {
     
     trackerWss = new WebSocket.Server({ server });
 
-    trackerWss.on("connection", (ws) => {
+    trackerWss.on("connection", async (ws) => {
       console.log("🔗 Frontend connected to Tray");
-      ws.send(JSON.stringify({ type: 'init', data: getStats() }));
+      ws.send(JSON.stringify({ type: 'init', data: await getStats() }));
       // Immediately send current master timer state to newly connected website
       ws.send(JSON.stringify({
         type: 'TIMER_STATE',
@@ -206,15 +206,15 @@ function startTrackerServer() {
         }
       }));
 
-      ws.on("message", (message) => {
+      ws.on("message", async (message) => {
         try {
           const data = JSON.parse(message);
           if (data.type === 'TAB_LOG') {
-            logTab(data.domain, data.title, data.duration, data.id);
-            trackerBroadcast({ type: 'stats', data: getStats() });
+            await logTab(data.domain, data.title, data.duration, data.id);
+            trackerBroadcast({ type: 'stats', data: await getStats() });
           } else if (data.type === 'CLEAR_DATA') {
-            clearDB();
-            trackerBroadcast({ type: 'stats', data: getStats() });
+            await clearDB();
+            trackerBroadcast({ type: 'stats', data: await getStats() });
           } else if (data.type === 'TIMER_ACTION') {
             handleTimerAction(data.action);
           }
@@ -250,8 +250,8 @@ function startTracking() {
         console.log(`✨ Scope Change: ${currentApp} | ${currentTitle}`);
         const duration = Math.floor((Date.now() - startTime) / 1000);
         if (duration > 1) {
-          logSession(lastApp, lastTitle, duration);
-          trackerBroadcast({ type: 'stats', data: getStats() });
+          await logSession(lastApp, lastTitle, duration);
+          trackerBroadcast({ type: 'stats', data: await getStats() });
         }
         startTime = Date.now();
       }
